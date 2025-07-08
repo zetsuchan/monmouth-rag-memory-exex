@@ -1,5 +1,9 @@
 # Monmouth RAG x Memory Execution Extensions
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/zetsuchan/monmouth-rag-memory-exex/actions/workflows/ci.yml/badge.svg)](https://github.com/zetsuchan/monmouth-rag-memory-exex/actions/workflows/ci.yml)
+[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
+
 Advanced AI-powered Execution Extensions for Reth that transform Monmouth into the premier AI-agent blockchain through real-time context retrieval (RAG) and persistent agent memory systems.
 
 ## Overview
