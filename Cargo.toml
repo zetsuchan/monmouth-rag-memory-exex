@@ -65,6 +65,8 @@ uuid = { version = "1.10", features = ["v4"] }
 chrono = "0.4"
 base64 = "0.22"
 flate2 = "1.0"
+getrandom = "0.2"
+borsh = "1.5"
 
 [dev-dependencies]
 criterion = "0.5"

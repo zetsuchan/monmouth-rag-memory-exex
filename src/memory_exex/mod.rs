@@ -3,6 +3,7 @@ pub mod ephemeral_zones;
 pub mod memory_hash;
 pub mod checkpointing;
 pub mod portability;
+pub mod zero_alloc_store;
 
 use crate::{MemoryEvent, shared::Metrics};
 use eyre::Result;
