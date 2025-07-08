@@ -5,6 +5,49 @@ All notable changes to the Monmouth RAG x Memory ExEx project will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-07-08
+
+### Added
+- **Enhanced Othentic Integration**: Complete implementation based on meeting insights
+  - MCP (Model Context Protocol) server for standardized agent-AVS communication
+  - Pre-batching engine with multiple sorting strategies (gas-efficient, MEV, fairness, AI-priority)
+  - Leader election mechanism supporting PoS, performance-based, round-robin, and VRF algorithms
+  - Enhanced validation service with custom endpoints and aggregation strategies
+  - Hybrid execution coordinator for AI/EVM transaction routing
+  
+- **MCP Server Features**:
+  - Built-in tools for price fetching, task submission, and validation
+  - Cryptographic proof generation for tool executions
+  - Connection management with authentication support
+  - Message routing and queuing system
+  
+- **Pre-batching Capabilities**:
+  - Transaction pool management for AI and EVM transactions
+  - Parallel execution grouping for same-agent operations
+  - Cross-chain intent support
+  - Performance metrics tracking
+  
+- **Validation Enhancements**:
+  - Consensus-based, weighted, and optimistic aggregation strategies
+  - Slashing condition monitoring
+  - Multi-validator result aggregation
+  - Custom validation rule registration
+  
+- **Hybrid Execution Strategy**:
+  - Separate databases (QMDB for AI, RiseDB for EVM)
+  - AWS-U high memory node support (7TB, 12TB instances)
+  - Dynamic strategy selection based on load and transaction type
+  - Resource allocation with locality awareness
+  
+- **Comprehensive Example**: `othentic_enhanced_demo.rs` showcasing all features
+
+### Technical Improvements
+- Modular architecture for easy extension
+- Performance monitoring with alerts
+- Deterministic transaction routing
+- Leader election proof generation and verification
+- Batch optimization for gas efficiency
+
 ## [0.3.1] - 2025-07-08
 
 ### Added

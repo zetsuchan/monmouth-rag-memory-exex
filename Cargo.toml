@@ -79,3 +79,11 @@ harness = false
 [[bench]]
 name = "memory_ops"
 harness = false
+
+[[example]]
+name = "lagrange_enhanced_demo"
+path = "examples/lagrange_enhanced_demo.rs"
+
+[[example]]
+name = "othentic_enhanced_demo"
+path = "examples/othentic_enhanced_demo.rs"
