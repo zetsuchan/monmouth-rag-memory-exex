@@ -148,14 +148,31 @@ let package = memory.export(agent_id, format).await?;
 ## Integrations
 
 ### EigenLayer AVS
-- Register as an operator for decentralized AI tasks
-- Submit and validate AI computation proofs
-- Participate in agent consensus
+- Full operator lifecycle management with staking and slashing
+- Submit and validate AI computation tasks with quorum consensus
+- Support for RAG queries, memory operations, and agent coordination
+- Cryptographic proof generation for task completion
 
 ### EigenDA
-- Store large embeddings and knowledge graphs
-- Ensure data availability for agent memories
-- Enable cross-chain memory portability
+- Blob dispersal with compression (Zstd, Lz4, Snappy)
+- Batch submission for efficient data availability
+- KZG commitments for data integrity verification
+- Configurable erasure coding parameters
+- Cost estimation for storage operations
+
+### Othentic (AI Inference Verification)
+- Register and version AI models across multiple frameworks
+- Submit inference tasks with deterministic execution
+- Consensus-based verification among operators
+- Zero-knowledge proofs for inference correctness
+- Performance tracking and operator reputation
+
+### Lagrange (ZK Coprocessor)
+- Generate proofs for memory operations and state transitions
+- Support multiple proof systems (Groth16, PlonK, STARKs, Halo2)
+- Batch proof aggregation for efficiency
+- Cross-chain state verification
+- Circuit management and cost estimation
 
 ### Composio
 - Connect to external tools (Firecrawl, Perplexity, etc.)
