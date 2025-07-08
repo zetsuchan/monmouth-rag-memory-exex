@@ -4,23 +4,44 @@
 //! It enables efficient proof generation for complex computations, including state
 //! transitions, memory operations, and cross-chain verification.
 
+pub mod gateway;
+pub mod state_committee;
+pub mod historical_queries;
+pub mod reputation;
+pub mod cross_chain;
+pub mod verifier;
+pub mod economics;
+
+pub use gateway::{LagrangeGateway, QueryType, QueryResult, GatewayEvent};
+pub use state_committee::{StateCommittee, ChainId, CrossChainQuery, CrossChainResult};
+pub use historical_queries::{HistoricalQueryProcessor, MemorySliceResult, RAGDocumentProof};
+pub use reputation::{ReputationAggregator, MetricsQuery, AggregatedMetrics};
+pub use cross_chain::{CrossChainVerifier, CrossChainIntent, VerificationRequest};
+pub use verifier::{ProofVerifier, VerificationRequest as ProofVerificationRequest, VerificationResult};
+pub use economics::{EconomicsManager, QueryFee, PaymentRequest};
+
 use eyre::Result;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, mpsc};
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct LagrangeIntegration {
-    /// Lagrange prover network endpoint
+    /// Core components
+    gateway: Arc<LagrangeGateway>,
+    state_committee: Arc<StateCommittee>,
+    historical_processor: Arc<HistoricalQueryProcessor>,
+    reputation_aggregator: Arc<ReputationAggregator>,
+    cross_chain_verifier: Arc<CrossChainVerifier>,
+    proof_verifier: Arc<ProofVerifier>,
+    economics_manager: Arc<EconomicsManager>,
+    
+    /// Legacy fields for compatibility
     prover_endpoint: String,
-    /// Aggregator service endpoint
     aggregator_endpoint: String,
-    /// Contract address for proof verification
     verifier_contract: String,
-    /// Cache of proof requests
     proof_cache: Arc<RwLock<HashMap<String, ProofRequest>>>,
-    /// Circuit configurations
     circuit_configs: Arc<RwLock<HashMap<String, CircuitConfig>>>,
 }
 
@@ -173,7 +194,102 @@ impl LagrangeIntegration {
         aggregator_endpoint: String,
         verifier_contract: String,
     ) -> Self {
+        // Initialize core components
+        let gateway = Arc::new(LagrangeGateway::new(prover_endpoint.clone()));
+        
+        let state_committee = Arc::new(StateCommittee::new(state_committee::CommitteeConfig {
+            min_validators: 10,
+            quorum_threshold: 67,
+            attestation_timeout: 30,
+            supported_chains: vec![
+                ChainId::new("ethereum"),
+                ChainId::new("optimism"),
+                ChainId::new("arbitrum"),
+                ChainId::new("solana"),
+            ],
+            aggregate_pubkey: None,
+        }));
+        
+        let chain_indexer = Arc::new(historical_queries::ChainDataIndexer::new());
+        let memory_reconstructor = Arc::new(historical_queries::MemoryReconstructor {
+            execution_tracer: Arc::new(historical_queries::ExecutionTracer {
+                vm_config: historical_queries::VMConfig {
+                    enable_memory_tracking: true,
+                    track_storage_changes: true,
+                    capture_call_frames: true,
+                },
+                state_provider: Arc::new(MockStateProvider),
+            }),
+            layout_analyzer: Arc::new(historical_queries::MemoryLayoutAnalyzer {
+                slot_mappings: HashMap::new(),
+                encoding_schemes: HashMap::new(),
+            }),
+        });
+        let rag_prover = Arc::new(historical_queries::RAGProofGenerator {
+            document_store: Arc::new(MockDocumentStore),
+            vector_index: Arc::new(MockVectorIndex),
+            merkle_builder: Arc::new(historical_queries::MerkleTreeBuilder {
+                hasher: |data| {
+                    use sha3::{Digest, Keccak256};
+                    let mut hasher = Keccak256::new();
+                    hasher.update(data);
+                    let result = hasher.finalize();
+                    let mut output = [0u8; 32];
+                    output.copy_from_slice(&result);
+                    output
+                },
+            }),
+        });
+        
+        let historical_processor = Arc::new(HistoricalQueryProcessor::new(
+            chain_indexer,
+            memory_reconstructor,
+            rag_prover,
+        ));
+        
+        let data_scanner = Arc::new(reputation::HistoricalDataScanner {
+            event_scanner: Arc::new(reputation::EventLogScanner {
+                agent_events: Arc::new(RwLock::new(HashMap::new())),
+                tracked_signatures: HashMap::new(),
+            }),
+            tx_analyzer: Arc::new(reputation::TransactionAnalyzer {
+                receipts: Arc::new(RwLock::new(HashMap::new())),
+            }),
+            memory_processor: Arc::new(reputation::MemoryLogProcessor {
+                memory_snapshots: Arc::new(RwLock::new(HashMap::new())),
+            }),
+        });
+        
+        let calculators = Arc::new(reputation::MetricCalculators {
+            roi_calculator: Arc::new(reputation::ROICalculator),
+            success_calculator: Arc::new(reputation::SuccessRateCalculator),
+            gas_calculator: Arc::new(reputation::GasEfficiencyCalculator),
+            slippage_analyzer: Arc::new(reputation::SlippageAnalyzer),
+        });
+        
+        let cross_chain_aggregator = Arc::new(reputation::CrossChainAggregator {
+            chain_sources: HashMap::new(),
+            unified_metrics: Arc::new(RwLock::new(HashMap::new())),
+        });
+        
+        let reputation_aggregator = Arc::new(ReputationAggregator::new(
+            data_scanner,
+            calculators,
+            cross_chain_aggregator,
+        ));
+        
+        let cross_chain_verifier = Arc::new(CrossChainVerifier::new());
+        let proof_verifier = Arc::new(ProofVerifier::new());
+        let economics_manager = Arc::new(EconomicsManager::new());
+        
         Self {
+            gateway,
+            state_committee,
+            historical_processor,
+            reputation_aggregator,
+            cross_chain_verifier,
+            proof_verifier,
+            economics_manager,
             prover_endpoint,
             aggregator_endpoint,
             verifier_contract,
@@ -423,5 +539,183 @@ impl LagrangeIntegration {
         let mut output = [0u8; 32];
         output.copy_from_slice(&result);
         output
+    }
+    
+    // Enhanced API methods
+    
+    /// Query historical memory with full proof generation
+    pub async fn query_historical_memory(
+        &self,
+        intent_id: String,
+        agent_address: [u8; 20],
+        memory_slot: u64,
+        block_number: Option<u64>,
+    ) -> Result<MemorySliceResult> {
+        // Calculate fee
+        let fee = self.economics_manager.calculate_fee(
+            QueryType::HistoricalMemory,
+            economics::QueryComplexity {
+                data_size_kb: 10,
+                time_range_blocks: block_number.unwrap_or(100),
+                cross_chain_hops: 0,
+                proof_complexity: economics::ProofComplexity::Medium,
+            },
+            economics::QueryPriority::Normal,
+        ).await?;
+        
+        // Process payment
+        let payment_request = PaymentRequest {
+            query_id: format!("mem_query_{}", uuid::Uuid::new_v4()),
+            payer: agent_address,
+            amount: fee.total_fee,
+            token: economics::PaymentToken::ETH,
+            priority: economics::QueryPriority::Normal,
+        };
+        
+        let receipt = self.economics_manager.process_payment(payment_request).await?;
+        
+        // Submit query through gateway
+        let query_type = QueryType::HistoricalMemory {
+            intent_id: intent_id.clone(),
+            agent_address,
+            memory_slot,
+            block_number,
+        };
+        
+        let (tx, mut rx) = mpsc::channel(1);
+        let callback = Box::new(move |result: QueryResult| {
+            let _ = tx.try_send(result);
+        });
+        
+        self.gateway.submit_query(
+            query_type,
+            agent_address,
+            receipt.amount_paid,
+            gateway::QueryPriority::Normal,
+            callback,
+        ).await?;
+        
+        // Wait for result
+        let result = rx.recv().await
+            .ok_or_else(|| eyre::eyre!("Query timeout"))?;
+        
+        // Use historical processor to get detailed result
+        self.historical_processor.query_historical_memory(
+            intent_id,
+            agent_address,
+            memory_slot,
+            block_number,
+        ).await
+    }
+    
+    /// Verify cross-chain action with state committee
+    pub async fn verify_cross_chain_action(
+        &self,
+        intent_id: String,
+        chain_id: ChainId,
+        action: cross_chain::CrossChainAction,
+    ) -> Result<cross_chain::VerificationResult> {
+        let request = VerificationRequest {
+            request_id: format!("verify_{}", uuid::Uuid::new_v4()),
+            intent_id,
+            chain_id,
+            action,
+            requester: [0u8; 20], // Would be actual requester
+        };
+        
+        self.cross_chain_verifier.verify_action(request).await
+    }
+    
+    /// Compute agent reputation metrics
+    pub async fn compute_agent_reputation(
+        &self,
+        agent_id: String,
+        time_range: reputation::TimeRange,
+        include_cross_chain: bool,
+    ) -> Result<AggregatedMetrics> {
+        let query = MetricsQuery {
+            agent_id,
+            metric_types: vec![reputation::MetricType::All],
+            time_range,
+            include_cross_chain,
+            chains: None,
+        };
+        
+        let (metrics, _proof) = self.reputation_aggregator
+            .compute_agent_metrics(query)
+            .await?;
+        
+        Ok(metrics)
+    }
+    
+    /// Submit and track cross-chain intent
+    pub async fn submit_cross_chain_intent(
+        &self,
+        intent: CrossChainIntent,
+    ) -> Result<mpsc::Receiver<cross_chain::CrossChainEvent>> {
+        let (tx, rx) = mpsc::channel(100);
+        
+        // Register intent with verifier
+        self.cross_chain_verifier.submit_intent(intent).await?;
+        
+        // Return event receiver
+        Ok(rx)
+    }
+    
+    /// Start Lagrange services
+    pub async fn start_services(&mut self) -> Result<()> {
+        tracing::info!("Starting Lagrange integration services");
+        
+        // Start gateway
+        let mut gateway = LagrangeGateway::new(self.prover_endpoint.clone());
+        tokio::spawn(async move {
+            if let Err(e) = gateway.start().await {
+                tracing::error!("Gateway error: {}", e);
+            }
+        });
+        
+        // Start cross-chain verifier
+        let mut verifier = CrossChainVerifier::new();
+        tokio::spawn(async move {
+            if let Err(e) = verifier.start().await {
+                tracing::error!("Cross-chain verifier error: {}", e);
+            }
+        });
+        
+        Ok(())
+    }
+}
+
+// Mock implementations for demo
+struct MockStateProvider;
+impl historical_queries::StateProvider for MockStateProvider {
+    fn get_state_at(&self, _address: &[u8; 20], _slot: &[u8; 32], _block: u64) -> Result<[u8; 32]> {
+        Ok([0u8; 32])
+    }
+    
+    fn get_code_at(&self, _address: &[u8; 20], _block: u64) -> Result<Vec<u8>> {
+        Ok(vec![])
+    }
+}
+
+struct MockDocumentStore;
+impl historical_queries::DocumentStore for MockDocumentStore {
+    fn get_document(&self, _hash: &[u8; 32]) -> Result<Option<historical_queries::Document>> {
+        Ok(None)
+    }
+    
+    fn get_documents_at_block(&self, _block: u64) -> Result<Vec<historical_queries::Document>> {
+        Ok(vec![])
+    }
+}
+
+struct MockVectorIndex;
+impl historical_queries::VectorIndex for MockVectorIndex {
+    fn search(&self, _query_vector: &[f32], _k: usize) -> Result<Vec<historical_queries::SearchResult>> {
+        Ok(vec![])
+    }
+    
+    fn get_embedding(&self, _doc_hash: &[u8; 32]) -> Result<Option<Vec<f32>>> {
+        Ok(None)
     }
 }
