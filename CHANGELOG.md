@@ -5,6 +5,45 @@ All notable changes to the Monmouth RAG x Memory ExEx project will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-07-08
+
+### Added
+- **Enhanced Lagrange Integration**: Complete reimplementation based on deep research
+  - Gateway component for query coordination and blockchain data indexing
+  - State committees with EigenLayer-restaked validators for cross-chain verification
+  - Historical query system enabling time-aware memory reconstruction
+  - RAG document usage proofs with Merkle inclusion and vector search verification
+  - Agent reputation metrics aggregation with cross-chain data sources
+  - Cross-chain intent verification with bridge monitoring
+  - Comprehensive proof verification infrastructure (SNARKs, attestations, hybrid)
+  - Economic model with dynamic pricing, fee distribution, and operator incentives
+  
+- **Time-Aware Agent Auditing**: Full historical reconstruction capabilities
+  - Query past Memory slices from any intent with cryptographic proofs
+  - Deterministic replay or Merkle inclusion proof options
+  - Memory commitment tracking at standard slot 0x10
+  - Complete audit trail for compliance and forensics
+  
+- **Cross-Chain Intent Support**: Seamless multi-chain workflows
+  - Fast finality proofs for optimistic rollups
+  - Bridge transfer monitoring and verification
+  - Multi-step intent orchestration with dependencies
+  - Economic security through restaked validators
+  
+- **Comprehensive Example**: `lagrange_enhanced_demo.rs` showcasing all features
+
+### Changed
+- Restructured Lagrange integration into modular components
+- Enhanced main integration struct with all new subsystems
+- Improved proof generation with multiple proof system support
+
+### Technical Improvements
+- Zero-knowledge proof generation for complex queries
+- Committee-based attestations with BLS signatures
+- Parallel proof generation for efficiency
+- Market-based fee discovery mechanism
+- Operator performance tracking and rewards
+
 ## [0.1.0] - 2025-07-07
 
 ### Added
