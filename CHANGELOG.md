@@ -5,6 +5,57 @@ All notable changes to the Monmouth RAG x Memory ExEx project will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2025-01-09
+
+### Added
+- **Unified AI Coordination (Phase 2)**: Complete implementation of coordinated AI decision-making
+  - `EnhancedAIDecisionEngine` with multi-model ensemble support (neural networks, decision trees, rule-based, statistical, hybrid)
+  - Configurable voting strategies: weighted average, majority, confidence-weighted, and adaptive
+  - Real-time model performance tracking and adaptation
+  - Context-aware routing with historical performance analysis
+  
+- **Agent State Management**: Comprehensive lifecycle and resource management
+  - `AgentStateManager` with state transitions (Initializing → Active → Idle → Suspended → Terminating)
+  - Health monitoring with automatic recovery strategies
+  - Dynamic resource allocation (CPU, memory, transaction quotas)
+  - Load balancing strategies (least-loaded, priority-based)
+  - Performance tracking and reputation management
+  
+- **Unified Coordination Service**: Orchestration layer for all components
+  - `UnifiedCoordinator` integrating BLS consensus, AI decisions, and agent coordination
+  - Transaction queue management with priority handling
+  - Cross-ExEx communication integration
+  - Parallel execution with configurable concurrency
+  - Automatic agent reassignment on failures
+  - Batch processing for efficiency
+  
+- **Enhanced Metrics v2**: Comprehensive monitoring and analytics
+  - AI decision accuracy tracking per model with confidence scores
+  - End-to-end latency breakdown (routing → preprocessing → consensus → execution)
+  - Agent resource utilization metrics (CPU, memory, queue depth, throughput)
+  - Collaboration metrics and consensus participation rates
+  - Cross-ExEx communication metrics
+  - Performance report generation with detailed insights
+  
+- **Supporting Infrastructure**:
+  - Shared types module for consistent type definitions
+  - Comprehensive example demonstrating all unified AI coordination features
+  - Unit tests for all major components
+
+### Technical Improvements
+- Ensemble AI decision-making reduces single-model bias
+- Adaptive voting adjusts to model specializations and performance
+- Resource-aware agent selection optimizes system utilization
+- Event-driven architecture enables real-time monitoring
+- Fault-tolerant design with multiple recovery strategies
+
+### Performance Enhancements
+- Decision caching reduces redundant AI processing
+- Batch transaction processing improves throughput
+- Parallel execution leverages available resources
+- Load balancing prevents agent overload
+- Metrics aggregation enables performance optimization
+
 ## [0.3.3] - 2025-01-09
 
 ### Added

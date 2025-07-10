@@ -6,6 +6,11 @@ pub mod communication;
 pub mod transaction_analyzer;
 pub mod eip7702;
 pub mod memory_root;
+pub mod types;
+pub mod ai_agent_v2;
+pub mod agent_state_manager;
+pub mod unified_coordinator;
+pub mod metrics_v2;
 
 pub use agent_standard::AgentStandard;
 pub use metrics::Metrics;
@@ -15,3 +20,8 @@ pub use communication::{InterExExChannel, CrossExExMessage, CrossExExCoordinator
 pub use transaction_analyzer::TransactionAnalyzer;
 pub use eip7702::{SelfPayingTransactionManager, AgentVault, SelfPayingTransaction};
 pub use memory_root::{MemoryRootTracker, MemoryRootInfo, MEMORY_ROOT_SLOT};
+pub use types::{AgentContext, AgentMemoryState, AgentAction};
+pub use ai_agent_v2::{EnhancedAIDecisionEngine, EnsembleConfig};
+pub use agent_state_manager::{AgentStateManager, AgentState, LifecycleState, StateEvent};
+pub use unified_coordinator::{UnifiedCoordinator, CoordinationConfig, CoordinationEvent};
+pub use metrics_v2::{EnhancedMetrics, SystemMetricsOverview, PerformanceReport};
