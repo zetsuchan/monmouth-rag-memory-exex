@@ -1,3 +1,5 @@
+pub mod svm_integration;
+
 use dashmap::DashMap;
 use eyre::Result;
 use reth_primitives::TransactionSigned;

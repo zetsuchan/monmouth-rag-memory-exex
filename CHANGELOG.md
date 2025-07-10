@@ -5,7 +5,60 @@ All notable changes to the Monmouth RAG x Memory ExEx project will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.2] - 2025-07-08
+## [0.3.3] - 2025-01-09
+
+### Added
+- **Context Pre-processing Infrastructure**: Advanced SVM-specific context processing
+  - `ContextPreprocessor` with feature extraction, semantic tagging, and compression
+  - LRU cache implementation with TTL, metrics, and hot context tracking
+  - Configurable processing pipeline with custom feature extractors
+  - Zstd compression for memory efficiency
+  
+- **Memory-Agent Integration Bridge**: Unified memory and RAG context management
+  - `AgentMemoryIntegration` connecting memory store with context retrieval
+  - Memory-aware context windows with episodic recall
+  - Semantic memory linking with configurable thresholds
+  - Event streaming for integration monitoring
+  
+- **Unified Agent Context Management**: Comprehensive agent state tracking
+  - `UnifiedAgentContext` with action history and performance metrics
+  - Multiple context window types (temporal, action-based, semantic, priority)
+  - Agent relationship tracking with trust scores
+  - Activity pattern analysis and risk scoring
+  
+- **Real-time Embedding Pipeline**: Low-latency embedding generation
+  - Priority queue with configurable concurrency limits
+  - Streaming support for continuous processing
+  - Embedding cache with TTL and cleanup
+  - GPU acceleration support (configurable)
+  
+- **Batch Embedding Processor**: Efficient bulk embedding generation
+  - Dynamic batch merging based on priority
+  - Parallel processing with configurable workers
+  - Compression support for large batches
+  - Comprehensive metrics tracking
+  
+- **Knowledge Graph SVM Integration**: Advanced graph-based relationship tracking
+  - Temporal edge tracking with decay
+  - PageRank-based influence calculation
+  - Shortest path finding between agents
+  - Automatic graph pruning for efficiency
+  - Transaction pattern recognition (hubs, bridges, frequent pairs)
+
+### Technical Improvements
+- Zero-copy operations where possible for performance
+- Extensive use of async/concurrent processing
+- Comprehensive error handling with custom error types
+- Unit tests for all major components
+- Modular architecture following existing patterns
+
+### Performance Optimizations
+- LRU caching reduces redundant processing
+- Batch processing minimizes overhead
+- Parallel workers maximize throughput
+- Graph pruning maintains efficiency at scale
+
+## [0.3.2] - 2025-01-08
 
 ### Added
 - **Enhanced Othentic Integration**: Complete implementation based on meeting insights
@@ -48,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Leader election proof generation and verification
 - Batch optimization for gas efficiency
 
-## [0.3.1] - 2025-07-08
+## [0.3.1] - 2025-01-08
 
 ### Added
 - **Enhanced Lagrange Integration**: Complete reimplementation based on deep research
@@ -87,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Market-based fee discovery mechanism
 - Operator performance tracking and rewards
 
-## [0.1.0] - 2025-07-07
+## [0.1.0] - 2025-01-07
 
 ### Added
 
@@ -147,7 +200,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory compaction during heavy load requires tuning
 - Cross-ExEx message ordering during reorgs needs additional testing
 
-## [0.2.0] - 2025-07-07
+## [0.2.0] - 2025-01-07
 
 ### Added
 - **EIP-7702 Self-Paying Transactions**: Agents can now execute transactions that pay for their own gas from dedicated vaults
@@ -186,14 +239,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Buffer pooling reduces memory pressure
 - Lock-free data structures where applicable
 
-## [0.1.0] - 2025-07-07
+## [0.1.0] - 2025-01-07
 
 ### Added
 
 #### Core Infrastructure
 [Previous content remains unchanged...]
 
-## [0.3.0] - 2025-07-08
+## [0.3.0] - 2025-01-08
 
 ### Added
 - **Enhanced EigenLayer AVS Integration**: Full implementation with operator staking, task validation, and quorum management

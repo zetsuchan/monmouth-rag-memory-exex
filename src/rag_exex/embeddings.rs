@@ -1,3 +1,6 @@
+pub mod realtime;
+pub mod batch;
+
 use eyre::Result;
 use candle_core::{Device, Tensor};
 use candle_transformers::models::bert::{BertModel, Config};

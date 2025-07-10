@@ -3,6 +3,7 @@ pub mod embeddings;
 pub mod context_retrieval;
 pub mod intent_parser;
 pub mod knowledge_graph;
+pub mod agent_context;
 
 use crate::{RagEvent, shared::Metrics};
 use eyre::Result;

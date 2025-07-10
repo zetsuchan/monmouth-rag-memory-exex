@@ -25,6 +25,7 @@ pub mod rag_exex;
 pub mod memory_exex;
 pub mod shared;
 pub mod integrations;
+pub mod context;
 
 use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
