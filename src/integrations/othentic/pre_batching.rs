@@ -3,16 +3,14 @@
 //! Implements the pre-batching algorithm for optimizing transaction ordering,
 //! with special handling for AI/RAG transactions and cross-chain intents.
 
-use crate::integrations::othentic::{
-    PreBatchingEngine, BatchConfig, OptimizationTarget,
-};
+// Types are defined in this module
 use eyre::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::collections::{HashMap, BTreeMap};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
-use alloy_primitives::{Address, U256, B256};
+use alloy::primitives::{Address, U256, B256};
 
 // Define the missing types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,6 +96,29 @@ pub struct BatchingMetrics {
     pub gas_saved: u64,
     pub compute_optimized: u64,
     pub reorg_count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatchConfig {
+    pub max_batch_size: usize,
+    pub batch_timeout_ms: u64,
+    pub optimization_target: OptimizationTarget,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum OptimizationTarget {
+    GasEfficiency,
+    MEVMaximization,
+    FairnessOptimized,
+    Custom(String),
+}
+
+#[derive(Debug)]
+pub struct PreBatchingEngine {
+    pub config: BatchConfig,
+    pub tx_pool: Arc<RwLock<TransactionPool>>,
+    pub strategies: HashMap<String, Box<dyn SortingStrategy>>,
+    pub metrics: Arc<RwLock<BatchingMetrics>>,
 }
 
 #[async_trait]

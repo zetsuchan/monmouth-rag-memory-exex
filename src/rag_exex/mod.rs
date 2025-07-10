@@ -10,7 +10,7 @@ use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
 use reth_primitives::{SealedBlockWithSenders, TransactionSigned};
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 use reth_tracing::tracing::{info, debug, error};
 use tokio::sync::mpsc;
 use std::sync::Arc;

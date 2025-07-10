@@ -33,6 +33,9 @@ pub mod enhanced_processor;
 pub mod performance;
 pub mod error_handling;
 pub mod monitoring;
+pub mod inter_exex;
+pub mod config;
+pub mod enhanced_main;
 
 use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
@@ -162,7 +165,16 @@ pub enum MemoryEvent {
     },
 }
 
+/// Run the ExEx with the default configuration
 pub async fn run<Node: FullNodeComponents>(ctx: ExExContext<Node>) -> Result<()> {
-    let manager = MonmouthExExManager::new(ctx).await?;
-    manager.run().await
+    let config = crate::config::ExExConfiguration::default();
+    crate::enhanced_main::run(ctx, config).await
+}
+
+/// Run the ExEx with a custom configuration
+pub async fn run_with_config<Node: FullNodeComponents>(
+    ctx: ExExContext<Node>,
+    config: crate::config::ExExConfiguration,
+) -> Result<()> {
+    crate::enhanced_main::run(ctx, config).await
 }

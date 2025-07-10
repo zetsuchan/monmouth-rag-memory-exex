@@ -2,6 +2,15 @@ use crate::rag_exex::vector_store::VectorStore;
 use crate::rag_exex::embeddings::RealtimeEmbeddingPipeline;
 use eyre::Result;
 use std::sync::Arc;
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RetrievalConfig {
+    pub max_results: usize,
+    pub similarity_threshold: f32,
+    pub include_metadata: bool,
+    pub time_window_hours: Option<u64>,
+}
 
 #[derive(Debug)]
 pub struct ContextRetriever {

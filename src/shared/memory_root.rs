@@ -1,9 +1,9 @@
 use eyre::Result;
-use alloy_primitives::{Address, B256, U256};
+use alloy::primitives::{Address, B256, U256};
 // StorageKey and StorageValue may not be available in current reth version
 // Using simplified types for now
-type StorageKey = alloy_primitives::B256;
-type StorageValue = alloy_primitives::B256;
+type StorageKey = alloy::primitives::B256;
+type StorageValue = alloy::primitives::B256;
 use reth_provider::{StateProvider, StateProviderFactory};
 use serde::{Serialize, Deserialize};
 use std::sync::Arc;

@@ -7,7 +7,7 @@ use crate::integrations::othentic::{
     LeaderElection, ElectionAlgorithm, OperatorInfo,
 };
 use serde::{Serialize, Deserialize};
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LeaderRecord {

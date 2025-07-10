@@ -1,6 +1,6 @@
 use eyre::Result;
 use reth_primitives::TransactionSigned;
-use alloy_primitives::{Address, U256, Bytes, B256};
+use alloy::primitives::{Address, U256, Bytes, B256};
 use serde::{Serialize, Deserialize};
 use std::sync::Arc;
 use dashmap::DashMap;

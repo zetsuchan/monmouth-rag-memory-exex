@@ -1,7 +1,6 @@
 use crate::memory_exex::{Memory, MemoryType};
 use eyre::Result;
-use libmdbx::{Database, Environment, WriteFlags};
-use libmdbx::flags::DatabaseFlags;
+use libmdbx::WriteFlags;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use dashmap::DashMap;
@@ -10,7 +9,7 @@ use std::num::NonZeroUsize;
 
 #[derive(Debug)]
 pub struct MemoryStore {
-    env: Arc<Environment>,
+    env: Arc<libmdbx::Environment<libmdbx::NoWriteMap>>,
     cache: Arc<DashMap<String, Memory>>,
     lru: Arc<RwLock<LruCache<String, Memory>>>,
 }
@@ -20,11 +19,11 @@ impl MemoryStore {
         let path = "./memory_store";
         std::fs::create_dir_all(path)?;
         
-        let mut env_builder = Environment::builder();
-        env_builder.set_max_dbs(10);
-        env_builder.set_map_size(1024 * 1024 * 1024 * 10);
-        
-        let env = Arc::new(env_builder.open(path)?);
+        let env = libmdbx::Environment::<libmdbx::NoWriteMap>::new()
+            .set_max_dbs(10)
+            .set_map_size(1024 * 1024 * 1024 * 10)
+            .open(path)?;
+        let env = Arc::new(env);
         let cache = Arc::new(DashMap::new());
         let lru = Arc::new(RwLock::new(LruCache::new(NonZeroUsize::new(1000).unwrap())));
         
@@ -37,7 +36,7 @@ impl MemoryStore {
         self.cache.insert(key.clone(), memory.clone());
         
         let tx = self.env.begin_rw_txn()?;
-        let db = tx.create_db(Some(&memory.agent_id), DatabaseFlags::empty())?;
+        let db = tx.create_db(Some(&memory.agent_id), libmdbx::DatabaseFlags::empty())?;
         
         let memory_bytes = bincode::serialize(&memory)?;
         tx.put(&db, memory.id.as_bytes(), &memory_bytes, WriteFlags::empty())?;

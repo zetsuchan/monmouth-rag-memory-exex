@@ -6,10 +6,11 @@ use tokio::sync::{mpsc, RwLock};
 
 use crate::context::preprocessing::{PreprocessedContext, ContextPreprocessor};
 use crate::rag_exex::context_retrieval::{ContextRetriever, RetrievalConfig};
-use crate::shared::types::{AgentContext, AgentMemoryState, MemoryType};
-use crate::shared::communication::{CrossExExMessage, MemoryRequest, MemoryResponse};
+use crate::shared::types::{AgentContext, AgentMemoryState};
+use crate::shared::communication::CrossExExMessage;
 
-use super::memory_store::{MemoryStore, MemoryEntry};
+use super::memory_store::MemoryStore;
+use crate::memory_exex::{Memory, MemoryType};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntegrationConfig {

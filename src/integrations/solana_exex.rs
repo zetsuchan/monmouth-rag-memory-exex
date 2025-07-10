@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use std::sync::Arc;
 use dashmap::DashMap;
 use borsh::{BorshSerialize, BorshDeserialize};
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 
 /// Solana ExEx Compatibility Layer
 /// 

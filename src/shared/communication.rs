@@ -1,7 +1,7 @@
 use eyre::Result;
 use tokio::sync::mpsc;
 use serde::{Serialize, Deserialize};
-use alloy_primitives::B256;
+use alloy::primitives::B256;
 use reth_primitives::TransactionSigned;
 use crate::memory_exex::{Memory, MemoryType};
 

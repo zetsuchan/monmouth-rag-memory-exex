@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use crate::context::preprocessing::PreprocessedContext;
 use crate::memory_exex::agent_integration::AgentMemoryIntegration;
 use crate::shared::types::{AgentAction, AgentContext, AgentMemoryState, MemoryType};
-use crate::shared::communication::TransactionAnalysis;
+use crate::shared::transaction_analyzer::TransactionAnalysis;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnifiedAgentContext {

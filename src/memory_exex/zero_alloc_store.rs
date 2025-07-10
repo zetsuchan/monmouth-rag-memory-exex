@@ -1,5 +1,5 @@
 use eyre::Result;
-use alloy_primitives::{Address, B256};
+use alloy::primitives::{Address, B256};
 use std::collections::HashMap;
 use dashmap::DashMap;
 use parking_lot::RwLock;

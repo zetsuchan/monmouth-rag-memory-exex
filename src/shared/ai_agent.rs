@@ -1,6 +1,6 @@
 use eyre::Result;
 use reth_primitives::TransactionSigned;
-use alloy_primitives::U256;
+use alloy::primitives::U256;
 use serde::{Serialize, Deserialize};
 use async_trait::async_trait;
 use std::time::Instant;

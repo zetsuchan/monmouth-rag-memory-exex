@@ -7,7 +7,7 @@ use crate::integrations::othentic::{
     ValidationService, ValidationEndpoint, ValidationRule,
 };
 use serde::{Serialize, Deserialize};
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,7 +55,6 @@ pub enum SlashingSeverity {
     Critical,
 }
 use eyre::Result;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use async_trait::async_trait;

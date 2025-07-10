@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, RwLock};
 
 use crate::context::preprocessing::PreprocessedContext;
 use crate::shared::types::{AgentAction, AgentContext};
-use crate::shared::communication::TransactionAnalysis;
+use crate::shared::transaction_analyzer::TransactionAnalysis;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphNode {

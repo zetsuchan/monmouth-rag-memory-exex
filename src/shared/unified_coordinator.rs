@@ -14,7 +14,7 @@ use super::agent_standard::{AgentCapability, AgentRegistry};
 use super::agent_state_manager::{AgentStateManager, LifecycleState, PriorityLevel, StateEvent};
 use super::ai_agent::{AIAgent, RoutingDecision, TransactionAnalysis};
 use super::ai_agent_v2::{EnhancedAIDecisionEngine, EnsembleConfig};
-use super::communication::{CrossExExCoordinator, CrossExExMessage, RoutingDecision as CommRoutingDecision};
+use super::communication::{CrossExExCoordinator, CrossExExMessage};
 use super::coordination::{BLSCoordinator, CoordinationMessage};
 use super::types::AgentContext;
 use crate::context::preprocessing::{ContextPreprocessor, PreprocessedContext};
