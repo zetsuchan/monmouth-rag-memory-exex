@@ -99,3 +99,7 @@ path = "examples/othentic_enhanced_demo.rs"
 [[example]]
 name = "unified_ai_coordinator_demo"
 path = "examples/unified_ai_coordinator_demo.rs"
+
+[[example]]
+name = "state_synchronization_demo"
+path = "examples/state_synchronization_demo.rs"

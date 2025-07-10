@@ -26,6 +26,10 @@ pub mod memory_exex;
 pub mod shared;
 pub mod integrations;
 pub mod context;
+pub mod alh;
+pub mod reorg;
+pub mod agents;
+pub mod enhanced_processor;
 
 use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
