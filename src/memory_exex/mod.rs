@@ -5,6 +5,7 @@ pub mod checkpointing;
 pub mod portability;
 pub mod zero_alloc_store;
 pub mod agent_integration;
+pub mod types;
 
 use crate::{MemoryEvent, shared::Metrics};
 use eyre::Result;
@@ -24,6 +25,8 @@ use self::{
     checkpointing::CheckpointManager,
     portability::MemoryPortability,
 };
+
+pub use self::types::{MemoryEntry, MemoryRequest, MemoryResponse, QueryCriteria, SortBy};
 
 #[derive(Debug)]
 pub struct MemoryExEx<Node: FullNodeComponents> {
@@ -281,11 +284,12 @@ impl<Node: FullNodeComponents> MemoryExEx<Node> {
     }
     
     fn parse_memory_operation(&self, tx: &TransactionSigned) -> Option<(String, MemoryOperation)> {
-        if tx.input().len() < 4 {
+        let input_data = &tx.input().0;
+        if input_data.len() < 4 {
             return None;
         }
         
-        let selector = &tx.input()[0..4];
+        let selector = &input_data[0..4];
         match selector {
             [0x01, 0x02, 0x03, 0x04] => self.parse_store_operation(tx),
             [0x05, 0x06, 0x07, 0x08] => self.parse_retrieve_operation(tx),

@@ -31,11 +31,12 @@ impl IntentParser {
     }
     
     pub async fn parse_transaction(&self, tx: &TransactionSigned) -> Result<Option<Intent>> {
-        if tx.input().len() < 4 {
+        let input_data = &tx.input().0;
+        if input_data.len() < 4 {
             return Ok(None);
         }
         
-        let selector = &tx.input()[0..4];
+        let selector = &input_data[0..4];
         
         let intent = match selector {
             [0xaa, 0xbb, 0xcc, 0xdd] => {
@@ -57,11 +58,12 @@ impl IntentParser {
     }
     
     async fn parse_query_intent(&self, tx: &TransactionSigned) -> Result<Option<Intent>> {
-        if tx.input().len() < 68 {
+        let input_data = &tx.input().0;
+        if input_data.len() < 68 {
             return Ok(None);
         }
         
-        let question_bytes = &tx.input()[4..68];
+        let question_bytes = &input_data[4..68];
         let question = String::from_utf8_lossy(question_bytes).trim_end_matches('\0').to_string();
         
         Ok(Some(Intent::Query { question }))

@@ -11,29 +11,34 @@ use std::collections::{HashMap, BTreeMap};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use alloy::primitives::{Address, U256, B256};
+use chrono;
 
 // Define the missing types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionPool {
-    pub ai_transactions: BTreeMap<B256, AITransaction>,
-    pub evm_transactions: BTreeMap<B256, EVMTransaction>,
+    pub ai_transactions: BTreeMap<TransactionPriority, Vec<AITransaction>>,
+    pub evm_transactions: BTreeMap<TransactionPriority, Vec<EVMTransaction>>,
     pub cross_chain_intents: Vec<CrossChainIntent>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AITransaction {
     pub id: B256,
+    pub tx_hash: B256,
     pub origin: Address,
+    pub agent_address: [u8; 20],
     pub target: Option<Address>,
     pub operation_type: AIOperationType,
     pub priority: TransactionPriority,
     pub gas_limit: U256,
+    pub estimated_compute: u64,
     pub data: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EVMTransaction {
     pub id: B256,
+    pub tx_hash: B256,
     pub from: Address,
     pub to: Option<Address>,
     pub value: U256,
@@ -46,33 +51,38 @@ pub struct EVMTransaction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CrossChainIntent {
     pub id: B256,
+    pub intent_id: String,
     pub source_chain: String,
     pub target_chain: String,
     pub agent: Address,
     pub intent_data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TransactionPriority {
-    Low,
-    Normal,
-    High,
-    Urgent,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TransactionPriority {
+    pub gas_price: u128,
+    pub priority_fee: u128,
+    pub timestamp: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AIOperationType {
-    MemoryUpdate,
-    RAGQuery,
+    MemoryUpdate { slot_count: u32 },
+    RAGQuery { embedding_size: usize },
+    InferenceTask { model_size: u64 },
+    AgentCoordination { participant_count: u32 },
     CrossChainSync,
     AgentCommunication,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SortedBatch {
-    pub transactions: Vec<BatchTransaction>,
-    pub total_gas: U256,
-    pub estimated_time: u64,
+    pub ai_transactions: Vec<AITransaction>,
+    pub evm_transactions: Vec<EVMTransaction>,
+    pub cross_chain_intents: Vec<CrossChainIntent>,
+    pub execution_order: Vec<ExecutionStep>,
+    pub estimated_gas: u128,
+    pub estimated_compute: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -83,10 +93,11 @@ pub enum BatchTransaction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExecutionStep {
-    pub step_type: String,
-    pub gas_cost: U256,
-    pub dependencies: Vec<B256>,
+pub enum ExecutionStep {
+    AIOperation { tx_hash: B256 },
+    EVMOperation { tx_hash: B256 },
+    CrossChainOperation { intent_id: String },
+    ParallelGroup { operations: Vec<Box<ExecutionStep>> },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,7 +134,8 @@ pub struct PreBatchingEngine {
 
 #[async_trait]
 pub trait SortingStrategy: Send + Sync {
-    async fn sort_transactions(&self, pool: &TransactionPool) -> Result<SortedBatch>;
+    async fn sort_batch(&self, pool: &TransactionPool, max_size: usize) -> Result<SortedBatch>;
+    fn name(&self) -> &str;
 }
 
 impl PreBatchingEngine {
@@ -235,8 +247,10 @@ impl PreBatchingEngine {
     
     /// Calculate priority for EVM transaction
     fn calculate_evm_priority(&self, tx: &EVMTransaction) -> TransactionPriority {
+        let gas_limit_u128: u128 = tx.gas_limit.to::<u128>();
+        let value_u128: u128 = tx.value.to::<u128>();
         TransactionPriority {
-            gas_price: tx.value / tx.gas_limit as u128, // Simplified gas price
+            gas_price: if gas_limit_u128 > 0 { value_u128 / gas_limit_u128 } else { 0 }, // Simplified gas price
             priority_fee: 0,
             timestamp: chrono::Utc::now().timestamp() as u64,
         }
@@ -253,7 +267,7 @@ impl PreBatchingEngine {
             / metrics.total_batches as f64;
         
         // Estimate gas saved through batching
-        let gas_saved = batch.ai_transactions.len() as u128 * 21000; // Base tx cost saved
+        let gas_saved = batch.ai_transactions.len() as u64 * 21000; // Base tx cost saved
         metrics.gas_saved += gas_saved;
         
         // Track compute optimization
@@ -331,7 +345,7 @@ impl SortingStrategy for GasEfficientStrategy {
                     break;
                 }
                 
-                batch.estimated_gas += tx.gas_limit;
+                batch.estimated_gas += tx.gas_limit.to::<u128>();
                 batch.execution_order.push(ExecutionStep::EVMOperation { 
                     tx_hash: tx.tx_hash 
                 });
@@ -385,7 +399,7 @@ impl SortingStrategy for MEVMaximizationStrategy {
                         tx_hash: tx.tx_hash,
                     });
                     batch.evm_transactions.push(tx.clone());
-                    batch.estimated_gas += tx.gas_limit;
+                    batch.estimated_gas += tx.gas_limit.to::<u128>();
                     tx_count += 1;
                 }
             }
@@ -441,7 +455,7 @@ impl SortingStrategy for FairnessOptimizedStrategy {
                         batch.execution_order.push(ExecutionStep::EVMOperation {
                             tx_hash: tx.tx_hash,
                         });
-                        batch.estimated_gas += tx.gas_limit;
+                        batch.estimated_gas += tx.gas_limit.to::<u128>();
                     }
                 }
             }

@@ -15,7 +15,7 @@ pub mod metrics_v2;
 pub use agent_standard::AgentStandard;
 pub use metrics::Metrics;
 pub use coordination::BLSCoordinator;
-pub use ai_agent::{AIAgent, UnifiedAIDecisionEngine, RoutingDecision};
+pub use ai_agent::{AIAgent, UnifiedAIDecisionEngine, RoutingDecision, TransactionAnalysis};
 pub use communication::{InterExExChannel, CrossExExMessage, CrossExExCoordinator};
 pub use transaction_analyzer::TransactionAnalyzer;
 pub use eip7702::{SelfPayingTransactionManager, AgentVault, SelfPayingTransaction};

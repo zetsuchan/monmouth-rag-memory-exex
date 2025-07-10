@@ -24,6 +24,8 @@ use self::{
     knowledge_graph::KnowledgeGraph,
 };
 
+pub use agent_context::UnifiedAgentContext;
+
 #[derive(Debug)]
 pub struct RagExEx<Node: FullNodeComponents> {
     ctx: ExExContext<Node>,

@@ -10,6 +10,7 @@ use crate::shared::types::{AgentContext, AgentMemoryState};
 use crate::shared::communication::CrossExExMessage;
 
 use super::memory_store::MemoryStore;
+use super::types::{MemoryEntry, MemoryRequest, MemoryResponse, QueryCriteria};
 use crate::memory_exex::{Memory, MemoryType};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

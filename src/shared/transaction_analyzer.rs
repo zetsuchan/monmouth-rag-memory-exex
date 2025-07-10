@@ -75,16 +75,17 @@ impl TransactionAnalyzer {
     }
     
     fn determine_semantic_type(&self, tx: &TransactionSigned) -> SemanticType {
-        if tx.to().is_none() {
+        let input_data = &tx.input().0;
+        if tx.to.is_none() {
             return SemanticType::ContractCreation;
         }
         
-        if tx.input().is_empty() {
+        if input_data.is_empty() {
             return SemanticType::SimpleTransfer;
         }
         
-        if tx.input().len() >= 4 {
-            let selector = &tx.input()[0..4];
+        if input_data.len() >= 4 {
+            let selector = &input_data[0..4];
             match selector {
                 [0xa9, 0x05, 0x9c, 0xbb] => SemanticType::TokenTransfer,
                 [0x23, 0xb8, 0x72, 0xdd] => SemanticType::TokenTransfer,
@@ -102,15 +103,15 @@ impl ComplexityCalculator {
     pub async fn calculate(&self, tx: &TransactionSigned) -> Result<f64> {
         let mut score = 0.0;
         
-        score += (tx.input().len() as f64) / 1000.0;
+        score += (tx.input().0.len() as f64) / 1000.0;
         
-        if tx.to().is_none() {
+        if tx.to.is_none() {
             score += 0.3;
         }
         
-        score += (tx.gas_limit() as f64) / 10_000_000.0;
+        score += (tx.gas_limit as f64) / 10_000_000.0;
         
-        if tx.input().len() > 100 {
+        if tx.input().0.len() > 100 {
             score += 0.2;
         }
         
@@ -126,21 +127,21 @@ impl SafetyAnalyzer {
     pub async fn analyze(&self, tx: &TransactionSigned) -> Result<f64> {
         let mut score = 1.0;
         
-        if tx.to().is_none() {
+        if tx.to.is_none() {
             score -= 0.2;
         }
         
-        if tx.gas_limit() > 5_000_000 {
+        if tx.gas_limit > 5_000_000 {
             score -= 0.1;
         }
         
-        if let Some(max_fee) = tx.max_fee_per_gas() {
+        if let Some(max_fee) = tx.max_fee_per_gas {
             if max_fee > 1000_000_000_000 {
                 score -= 0.15;
             }
         }
         
-        if tx.input().len() > 10000 {
+        if tx.input().0.len() > 10000 {
             score -= 0.1;
         }
         
@@ -152,23 +153,23 @@ impl GasEstimator {
     pub async fn estimate(&self, tx: &TransactionSigned) -> Result<GasEstimate> {
         let base_gas = 21000u64;
         
-        let data_gas = tx.input().iter().map(|&byte| {
+        let data_gas = tx.input().0.iter().map(|&byte| {
             if byte == 0 { 4 } else { 16 }
         }).sum::<u64>();
         
         let total_base = base_gas + data_gas;
         
-        let estimated_actual = if tx.to().is_none() {
+        let estimated_actual = if tx.to.is_none() {
             total_base + 32000
         } else {
-            total_base + (tx.input().len() as u64 * 10)
+            total_base + (tx.input().0.len() as u64 * 10)
         };
         
         Ok(GasEstimate {
             base_gas: total_base,
-            priority_fee: tx.max_priority_fee_per_gas().unwrap_or(1_000_000_000),
-            max_fee: tx.max_fee_per_gas().unwrap_or(50_000_000_000),
-            estimated_actual: estimated_actual.min(tx.gas_limit()),
+            priority_fee: tx.max_priority_fee_per_gas.unwrap_or(1_000_000_000),
+            max_fee: tx.max_fee_per_gas.unwrap_or(50_000_000_000),
+            estimated_actual: estimated_actual.min(tx.gas_limit),
         })
     }
 }
