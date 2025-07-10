@@ -4,6 +4,7 @@ pub mod composio;
 pub mod solana_exex;
 pub mod othentic;
 pub mod lagrange;
+pub mod crypto;
 
 pub use eigenlayer::EigenLayerIntegration;
 pub use eigenda::EigenDAIntegration;
