@@ -1,5 +1,9 @@
 use eyre::Result;
-use reth_primitives::{Address, H256, U256, StorageKey, StorageValue};
+use alloy_primitives::{Address, B256, U256};
+// StorageKey and StorageValue may not be available in current reth version
+// Using simplified types for now
+type StorageKey = alloy_primitives::B256;
+type StorageValue = alloy_primitives::B256;
 use reth_provider::{StateProvider, StateProviderFactory};
 use serde::{Serialize, Deserialize};
 use std::sync::Arc;
@@ -21,7 +25,7 @@ pub const MEMORY_ROOT_SLOT: StorageKey = StorageKey::new([
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryRootInfo {
     pub agent: Address,
-    pub memory_root: H256,
+    pub memory_root: B256,
     pub block_number: u64,
     pub timestamp: u64,
     pub verification_proof: Option<MemoryProof>,
@@ -29,8 +33,8 @@ pub struct MemoryRootInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryProof {
-    pub merkle_root: H256,
-    pub intent_hashes: Vec<H256>,
+    pub merkle_root: B256,
+    pub intent_hashes: Vec<B256>,
     pub total_size: u64,
     pub signature: Vec<u8>,
 }
@@ -59,7 +63,7 @@ where
         &self,
         agent: Address,
         block_number: Option<u64>,
-    ) -> Result<Option<H256>> {
+    ) -> Result<Option<B256>> {
         let state_provider = if let Some(block) = block_number {
             self.provider.state_by_block_number_or_tag(block.into())?
         } else {
@@ -70,7 +74,7 @@ where
         
         if let Some(value) = storage_value {
             if value != StorageValue::ZERO {
-                let memory_root = H256::from(value.to_be_bytes::<32>());
+                let memory_root = B256::from(value.to_be_bytes::<32>());
                 
                 // Update cache
                 self.cached_roots.insert(agent, MemoryRootInfo {
@@ -96,7 +100,7 @@ where
     pub async fn verify_memory_root(
         &self,
         agent: Address,
-        offchain_root: H256,
+        offchain_root: B256,
         block_number: Option<u64>,
     ) -> Result<bool> {
         if !self.verification_enabled {
@@ -107,7 +111,7 @@ where
         
         match onchain_root {
             Some(root) => Ok(root == offchain_root),
-            None => Ok(offchain_root == H256::zero()),
+            None => Ok(offchain_root == B256::zero()),
         }
     }
     
@@ -115,7 +119,7 @@ where
     pub fn generate_memory_proof(
         &self,
         agent: Address,
-        intent_hashes: Vec<H256>,
+        intent_hashes: Vec<B256>,
         total_size: u64,
     ) -> Result<MemoryProof> {
         // Calculate merkle root from intent hashes
@@ -165,9 +169,9 @@ where
         Ok(self.cached_roots.iter().map(|e| *e.key()).collect())
     }
     
-    fn calculate_merkle_root(&self, hashes: &[H256]) -> H256 {
+    fn calculate_merkle_root(&self, hashes: &[B256]) -> B256 {
         if hashes.is_empty() {
-            return H256::zero();
+            return B256::zero();
         }
         
         let mut current_level = hashes.to_vec();
@@ -184,7 +188,7 @@ where
                 combined[32..].copy_from_slice(&right.0);
                 
                 let hash = keccak256(&combined);
-                next_level.push(H256::from_slice(&hash));
+                next_level.push(B256::from_slice(&hash));
             }
             
             current_level = next_level;
@@ -193,7 +197,7 @@ where
         current_level[0]
     }
     
-    fn sign_memory_proof(&self, agent: &Address, merkle_root: &H256) -> Result<Vec<u8>> {
+    fn sign_memory_proof(&self, agent: &Address, merkle_root: &B256) -> Result<Vec<u8>> {
         // Placeholder - would use proper BLS signing in production
         let mut signature = vec![0u8; 65];
         signature[..20].copy_from_slice(&agent.0);
@@ -201,7 +205,7 @@ where
         Ok(signature)
     }
     
-    fn verify_signature(&self, agent: &Address, merkle_root: &H256, signature: &[u8]) -> Result<bool> {
+    fn verify_signature(&self, agent: &Address, merkle_root: &B256, signature: &[u8]) -> Result<bool> {
         // Placeholder verification
         if signature.len() != 65 {
             return Ok(false);
@@ -230,7 +234,7 @@ pub struct MemoryRootContract {
 
 impl MemoryRootContract {
     /// Generate calldata for setMemoryRoot(bytes32)
-    pub fn encode_set_memory_root(&self, memory_root: H256) -> Vec<u8> {
+    pub fn encode_set_memory_root(&self, memory_root: B256) -> Vec<u8> {
         let mut calldata = vec![
             // setMemoryRoot(bytes32) selector
             0x3e, 0x4f, 0x49, 0xe6,
@@ -261,10 +265,10 @@ mod tests {
         };
         
         let hashes = vec![
-            H256::from_low_u64_be(1),
-            H256::from_low_u64_be(2),
-            H256::from_low_u64_be(3),
-            H256::from_low_u64_be(4),
+            B256::from_low_u64_be(1),
+            B256::from_low_u64_be(2),
+            B256::from_low_u64_be(3),
+            B256::from_low_u64_be(4),
         ];
         
         let root1 = tracker.calculate_merkle_root(&hashes);
@@ -289,7 +293,7 @@ mod tests {
         };
         
         let agent = Address::random();
-        let intents = vec![H256::random(), H256::random()];
+        let intents = vec![B256::random(), B256::random()];
         let total_size = 1024;
         
         let proof = tracker.generate_memory_proof(agent, intents.clone(), total_size).unwrap();
@@ -308,7 +312,7 @@ mod tests {
             address: Address::random(),
         };
         
-        let memory_root = H256::random();
+        let memory_root = B256::random();
         let calldata = contract.encode_set_memory_root(memory_root);
         
         assert_eq!(calldata.len(), 36); // 4 bytes selector + 32 bytes root

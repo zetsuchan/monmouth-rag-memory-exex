@@ -216,32 +216,39 @@ impl CircuitBreaker {
             opened_at: Instant::now() 
         };
         
-        let mut metrics = self.metrics.write().await;
-        metrics.state_transitions += 1;
+        {
+            let mut metrics = self.metrics.write().await;
+            metrics.state_transitions += 1;
+            metrics.state = "Open".to_string();
+        }
         
         info!("Circuit breaker transitioned to OPEN state");
-        self.update_metrics().await;
     }
 
     async fn transition_to_half_open(&self) {
         *self.state.write().await = CircuitBreakerState::HalfOpen { test_requests: 0 };
         
-        let mut metrics = self.metrics.write().await;
-        metrics.state_transitions += 1;
+        {
+            let mut metrics = self.metrics.write().await;
+            metrics.state_transitions += 1;
+            metrics.state = "HalfOpen".to_string();
+        }
         
         info!("Circuit breaker transitioned to HALF-OPEN state");
-        self.update_metrics().await;
     }
 
     async fn transition_to_closed(&self) {
         *self.state.write().await = CircuitBreakerState::Closed;
         *self.failure_count.write().await = 0;
         
-        let mut metrics = self.metrics.write().await;
-        metrics.state_transitions += 1;
+        {
+            let mut metrics = self.metrics.write().await;
+            metrics.state_transitions += 1;
+            metrics.state = "Closed".to_string();
+            metrics.failure_count = 0;
+        }
         
         info!("Circuit breaker transitioned to CLOSED state");
-        self.update_metrics().await;
     }
 
     async fn increment_concurrent_requests(&self) {

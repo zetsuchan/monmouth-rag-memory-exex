@@ -1,7 +1,8 @@
 use eyre::Result;
 use tokio::sync::mpsc;
 use serde::{Serialize, Deserialize};
-use reth_primitives::{H256, TransactionSigned};
+use alloy_primitives::B256;
+use reth_primitives::TransactionSigned;
 use crate::memory_exex::{Memory, MemoryType};
 
 #[derive(Debug)]
@@ -13,7 +14,7 @@ pub struct InterExExChannel {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CrossExExMessage {
     TransactionAnalysis {
-        tx_hash: H256,
+        tx_hash: B256,
         routing_decision: crate::shared::ai_agent::RoutingDecision,
         context: Vec<u8>,
         timestamp: std::time::Instant,
@@ -67,7 +68,7 @@ pub struct RAGResponse {
 pub struct RAGResult {
     pub content: String,
     pub relevance_score: f64,
-    pub source_tx_hash: Option<H256>,
+    pub source_tx_hash: Option<B256>,
     pub metadata: serde_json::Value,
 }
 

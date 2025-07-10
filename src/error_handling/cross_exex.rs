@@ -33,7 +33,7 @@ impl Default for CrossExExErrorConfig {
             exex_health_check_interval: Duration::from_secs(10),
             max_failed_health_checks: 3,
             failover_timeout: Duration::from_secs(30),
-            enable_automatic_failover: bool::true,
+            enable_automatic_failover: true,
             enable_load_redistribution: true,
             quarantine_duration: Duration::from_secs(300),
         }

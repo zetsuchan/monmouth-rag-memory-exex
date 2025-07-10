@@ -5,6 +5,15 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn, error};
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{Html, IntoResponse, Json},
+    routing::{get, post},
+    Router,
+};
+use tower_http::cors::CorsLayer;
+use serde_json::json;
 
 use super::{
     MonitoringConfig, MonitoringMetrics, 
@@ -543,9 +552,318 @@ impl DashboardServer {
 
         *self.server_active.write().await = true;
         
-        info!("Dashboard server would start on port {} (HTTP server implementation needed)", self.server_port);
+        let app = self.create_router().await;
+        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.server_port)).await?;
+        
+        info!("Dashboard server starting on port {}", self.server_port);
+        
+        let dashboard_clone = self.dashboard.clone();
+        let server_active = self.server_active.clone();
+        
+        tokio::spawn(async move {
+            if let Err(e) = axum::serve(listener, app).await {
+                error!("Dashboard server error: {}", e);
+                *server_active.write().await = false;
+            }
+        });
+        
+        info!("Dashboard server started successfully on port {}", self.server_port);
         
         Ok(())
+    }
+
+    async fn create_router(&self) -> Router {
+        Router::new()
+            .route("/", get(Self::dashboard_home))
+            .route("/health", get(Self::health_check))
+            .route("/metrics", get(Self::metrics_endpoint))
+            .route("/api/dashboard", get(Self::api_dashboard_data))
+            .route("/api/dashboard/export/:format", get(Self::api_export_data))
+            .route("/api/performance/:metric", get(Self::api_performance_data))
+            .route("/api/components", get(Self::api_component_status))
+            .route("/api/alerts", get(Self::api_active_alerts))
+            .route("/api/health", get(Self::api_health_summary))
+            .route("/ws/dashboard", get(Self::websocket_handler))
+            .layer(CorsLayer::permissive())
+            .with_state(self.dashboard.clone())
+    }
+
+    async fn dashboard_home(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        let html = r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monmouth ExEx Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .metric-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .metric-value { font-size: 2em; font-weight: bold; color: #27ae60; }
+        .metric-label { color: #7f8c8d; margin-bottom: 10px; }
+        .status-good { color: #27ae60; }
+        .status-warning { color: #f39c12; }
+        .status-critical { color: #e74c3c; }
+        .refresh-btn { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #3498db; }
+    </style>
+    <script>
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+            }
+        }
+        
+        function updateDashboard(data) {
+            document.getElementById('health-score').textContent = (data.system_overview.health_score * 100).toFixed(1) + '%';
+            document.getElementById('uptime').textContent = formatUptime(data.system_overview.uptime_seconds);
+            document.getElementById('success-rate').textContent = data.system_overview.success_rate.toFixed(1) + '%';
+            document.getElementById('response-time').textContent = data.system_overview.avg_response_time.toFixed(1) + 'ms';
+            document.getElementById('active-components').textContent = data.system_overview.active_components;
+            document.getElementById('critical-alerts').textContent = data.system_overview.critical_alerts;
+            
+            document.getElementById('healthy-components').textContent = data.health_summary.healthy;
+            document.getElementById('degraded-components').textContent = data.health_summary.degraded;
+            document.getElementById('unhealthy-components').textContent = data.health_summary.unhealthy;
+            
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+        }
+        
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+        
+        function autoRefresh() {
+            loadDashboardData();
+            setTimeout(autoRefresh, 5000); // Refresh every 5 seconds
+        }
+        
+        window.onload = function() {
+            loadDashboardData();
+            autoRefresh();
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Monmouth ExEx Monitoring Dashboard</h1>
+            <p>Real-time monitoring and performance metrics</p>
+        </div>
+        
+        <div class="nav">
+            <a href="/">Dashboard</a>
+            <a href="/health">Health Check</a>
+            <a href="/metrics">Prometheus Metrics</a>
+            <a href="/api/dashboard/export/json">Export JSON</a>
+            <a href="/api/dashboard/export/csv">Export CSV</a>
+            <button class="refresh-btn" onclick="loadDashboardData()">Refresh Now</button>
+            <span style="float: right;">Last updated: <span id="last-updated">Loading...</span></span>
+        </div>
+        
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-label">System Health Score</div>
+                <div class="metric-value status-good" id="health-score">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">System Uptime</div>
+                <div class="metric-value" id="uptime">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value status-good" id="success-rate">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Average Response Time</div>
+                <div class="metric-value" id="response-time">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Active Components</div>
+                <div class="metric-value" id="active-components">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Critical Alerts</div>
+                <div class="metric-value status-critical" id="critical-alerts">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Healthy Components</div>
+                <div class="metric-value status-good" id="healthy-components">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Degraded Components</div>
+                <div class="metric-value status-warning" id="degraded-components">--</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Unhealthy Components</div>
+                <div class="metric-value status-critical" id="unhealthy-components">--</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        "#;
+        Html(html)
+    }
+
+    async fn health_check(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        if let Some(data) = dashboard.get_current_dashboard().await {
+            let health = json!({
+                "status": "healthy",
+                "health_score": data.system_overview.health_score,
+                "uptime_seconds": data.system_overview.uptime_seconds,
+                "active_components": data.system_overview.active_components,
+                "critical_alerts": data.system_overview.critical_alerts,
+                "timestamp": data.timestamp
+            });
+            (StatusCode::OK, Json(health))
+        } else {
+            let health = json!({
+                "status": "initializing",
+                "message": "Dashboard data not yet available"
+            });
+            (StatusCode::SERVICE_UNAVAILABLE, Json(health))
+        }
+    }
+
+    async fn metrics_endpoint(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        if let Some(data) = dashboard.get_current_dashboard().await {
+            let prometheus_metrics = format!(
+                "# HELP monmouth_system_health_score Overall system health score\n\
+                 # TYPE monmouth_system_health_score gauge\n\
+                 monmouth_system_health_score {}\n\
+                 # HELP monmouth_uptime_seconds System uptime in seconds\n\
+                 # TYPE monmouth_uptime_seconds counter\n\
+                 monmouth_uptime_seconds {}\n\
+                 # HELP monmouth_success_rate Request success rate percentage\n\
+                 # TYPE monmouth_success_rate gauge\n\
+                 monmouth_success_rate {}\n\
+                 # HELP monmouth_response_time_ms Average response time in milliseconds\n\
+                 # TYPE monmouth_response_time_ms gauge\n\
+                 monmouth_response_time_ms {}\n\
+                 # HELP monmouth_active_components Number of active components\n\
+                 # TYPE monmouth_active_components gauge\n\
+                 monmouth_active_components {}\n\
+                 # HELP monmouth_critical_alerts Number of critical alerts\n\
+                 # TYPE monmouth_critical_alerts gauge\n\
+                 monmouth_critical_alerts {}\n\
+                 # HELP monmouth_healthy_components Number of healthy components\n\
+                 # TYPE monmouth_healthy_components gauge\n\
+                 monmouth_healthy_components {}\n\
+                 # HELP monmouth_degraded_components Number of degraded components\n\
+                 # TYPE monmouth_degraded_components gauge\n\
+                 monmouth_degraded_components {}\n\
+                 # HELP monmouth_unhealthy_components Number of unhealthy components\n\
+                 # TYPE monmouth_unhealthy_components gauge\n\
+                 monmouth_unhealthy_components {}\n",
+                data.system_overview.health_score,
+                data.system_overview.uptime_seconds,
+                data.system_overview.success_rate,
+                data.system_overview.avg_response_time,
+                data.system_overview.active_components,
+                data.system_overview.critical_alerts,
+                data.health_summary.healthy,
+                data.health_summary.degraded,
+                data.health_summary.unhealthy,
+            );
+            (StatusCode::OK, prometheus_metrics)
+        } else {
+            (StatusCode::SERVICE_UNAVAILABLE, "# Metrics not available yet\n".to_string())
+        }
+    }
+
+    async fn api_dashboard_data(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        match dashboard.get_current_dashboard().await {
+            Some(data) => (StatusCode::OK, Json(data)),
+            None => {
+                let error = json!({"error": "Dashboard data not available"});
+                (StatusCode::SERVICE_UNAVAILABLE, Json(error))
+            }
+        }
+    }
+
+    async fn api_export_data(
+        Path(format): Path<String>,
+        State(dashboard): State<Arc<MetricsDashboard>>
+    ) -> impl IntoResponse {
+        match dashboard.export_dashboard_data(&format).await {
+            Ok(data) => {
+                let content_type = match format.as_str() {
+                    "json" => "application/json",
+                    "csv" => "text/csv",
+                    "html" => "text/html",
+                    _ => "text/plain",
+                };
+                (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, content_type)], data)
+            }
+            Err(e) => {
+                let error = format!("Export failed: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, [(axum::http::header::CONTENT_TYPE, "text/plain")], error)
+            }
+        }
+    }
+
+    async fn api_performance_data(
+        Path(metric): Path<String>,
+        Query(params): Query<HashMap<String, String>>,
+        State(dashboard): State<Arc<MetricsDashboard>>
+    ) -> impl IntoResponse {
+        let duration = params.get("duration")
+            .and_then(|d| d.parse::<u64>().ok())
+            .map(Duration::from_secs)
+            .unwrap_or(Duration::from_secs(3600));
+            
+        let data = dashboard.get_performance_chart_data(&metric, duration).await;
+        (StatusCode::OK, Json(data))
+    }
+
+    async fn api_component_status(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        if let Some(data) = dashboard.get_current_dashboard().await {
+            (StatusCode::OK, Json(data.component_status))
+        } else {
+            let error = json!({"error": "Component status not available"});
+            (StatusCode::SERVICE_UNAVAILABLE, Json(error))
+        }
+    }
+
+    async fn api_active_alerts(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        if let Some(data) = dashboard.get_current_dashboard().await {
+            (StatusCode::OK, Json(data.active_alerts))
+        } else {
+            let error = json!({"error": "Alert data not available"});
+            (StatusCode::SERVICE_UNAVAILABLE, Json(error))
+        }
+    }
+
+    async fn api_health_summary(State(dashboard): State<Arc<MetricsDashboard>>) -> impl IntoResponse {
+        if let Some(data) = dashboard.get_current_dashboard().await {
+            (StatusCode::OK, Json(data.health_summary))
+        } else {
+            let error = json!({"error": "Health summary not available"});
+            (StatusCode::SERVICE_UNAVAILABLE, Json(error))
+        }
+    }
+
+    async fn websocket_handler() -> impl IntoResponse {
+        StatusCode::NOT_IMPLEMENTED
     }
 
     pub async fn stop_server(&self) -> Result<()> {

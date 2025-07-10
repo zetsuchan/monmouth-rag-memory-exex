@@ -1,4 +1,4 @@
-use alloy::primitives::{Address, B256};
+use alloy::primitives::{Address, B256, U256};
 use async_trait::async_trait;
 use eyre::Result;
 use reth_primitives::TransactionSigned;
@@ -680,7 +680,7 @@ impl AIModel for RuleBasedModel {
 
         let routing = if analysis.safety_score < 0.5 {
             RoutingDecision::Skip
-        } else if tx.value() > reth_primitives::U256::from(10_000_000_000_000_000_000u128) {
+        } else if tx.value() > U256::from(10_000_000_000_000_000_000u128) {
             RoutingDecision::ProcessWithMemory
         } else {
             RoutingDecision::ProcessWithSVM
@@ -810,7 +810,7 @@ mod tests {
                 max_fee_per_gas: 20_000_000_000,
                 max_priority_fee_per_gas: 1_000_000_000,
                 to: TxKind::Call(Address::default()),
-                value: reth_primitives::U256::from(1_000_000_000_000_000_000u64),
+                value: U256::from(1_000_000_000_000_000_000u64),
                 input: Default::default(),
                 access_list: Default::default(),
             }),

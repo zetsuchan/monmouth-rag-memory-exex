@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::{mpsc, RwLock};
 use tracing::{debug, info, warn, error};
 
-use super::{MonitoringConfig, AlertChannel};
+use super::MonitoringConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AlertRule {

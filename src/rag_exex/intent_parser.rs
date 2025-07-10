@@ -1,7 +1,20 @@
 use crate::rag_exex::context_retrieval::Intent;
 use eyre::Result;
 use reth_primitives::TransactionSigned;
-use rust_bert::pipelines::question_answering::{QaInput, QuestionAnsweringModel};
+// rust_bert is not available, using simplified intent parsing
+// TODO: Replace with actual ML model when dependencies are available
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QaInput {
+    pub question: String,
+    pub context: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuestionAnsweringModel {
+    pub model_name: String,
+}
 use std::sync::Arc;
 use tokio::sync::RwLock;
 

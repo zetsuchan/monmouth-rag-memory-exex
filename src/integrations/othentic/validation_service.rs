@@ -4,10 +4,56 @@
 //! for AI inference and transaction validation.
 
 use crate::integrations::othentic::{
-    ValidationService, ValidationEndpoint, ValidationRule, ValidationResult,
-    AggregatedResult, ResultAggregator, AggregationStrategy, SlashingCondition,
-    SlashingSeverity,
+    ValidationService, ValidationEndpoint, ValidationRule,
 };
+use serde::{Serialize, Deserialize};
+use alloy_primitives::Address;
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationResult {
+    pub valid: bool,
+    pub score: f64,
+    pub errors: Vec<String>,
+    pub timestamp: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AggregatedResult {
+    pub total_score: f64,
+    pub validator_count: u32,
+    pub consensus_reached: bool,
+    pub individual_results: HashMap<Address, ValidationResult>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResultAggregator {
+    pub strategy: AggregationStrategy,
+    pub threshold: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AggregationStrategy {
+    Average,
+    Median,
+    Weighted,
+    MajorityVote,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlashingCondition {
+    pub condition_type: String,
+    pub severity: SlashingSeverity,
+    pub threshold: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SlashingSeverity {
+    Warning,
+    Minor,
+    Major,
+    Critical,
+}
 use eyre::Result;
 use std::collections::HashMap;
 use std::sync::Arc;

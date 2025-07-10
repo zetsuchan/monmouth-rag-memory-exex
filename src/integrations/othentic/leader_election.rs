@@ -4,8 +4,18 @@
 //! with support for multiple election algorithms.
 
 use crate::integrations::othentic::{
-    LeaderElection, ElectionAlgorithm, LeaderRecord, OperatorInfo,
+    LeaderElection, ElectionAlgorithm, OperatorInfo,
 };
+use serde::{Serialize, Deserialize};
+use alloy_primitives::Address;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeaderRecord {
+    pub leader: Address,
+    pub epoch: u64,
+    pub stake: u64,
+    pub timestamp: u64,
+}
 use eyre::Result;
 use std::collections::HashMap;
 use std::sync::Arc;

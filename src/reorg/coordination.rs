@@ -611,12 +611,6 @@ struct StateConflict {
     severity: f64,
 }
 
-#[derive(Debug)]
-enum ConflictResolution {
-    Dropped,
-    Reprocessed,
-    Merged(B256),
-}
 
 #[derive(Debug, Default)]
 struct ChainIdentifier {

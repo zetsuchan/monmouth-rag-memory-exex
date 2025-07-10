@@ -1,4 +1,4 @@
-use blst::{PublicKey, SecretKey, Signature, AggregatePublicKey, AggregateSignature};
+use blst::{min_pk::PublicKey, min_pk::SecretKey, min_pk::Signature, min_pk::AggregatePublicKey, min_pk::AggregateSignature};
 use eyre::Result;
 use std::collections::HashMap;
 

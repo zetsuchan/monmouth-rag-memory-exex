@@ -11,6 +11,7 @@ use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
 use reth_primitives::{SealedBlockWithSenders, TransactionSigned};
+use alloy_primitives::Address;
 use reth_tracing::tracing::{info, debug, error};
 use tokio::sync::mpsc;
 use std::sync::Arc;
@@ -148,7 +149,7 @@ impl<Node: FullNodeComponents> MemoryExEx<Node> {
     async fn process_transaction(
         &self,
         tx: &TransactionSigned,
-        sender: &reth_primitives::Address,
+        sender: &Address,
         event_tx: &mpsc::Sender<MemoryEvent>,
     ) -> Result<()> {
         if let Some((agent_id, operation)) = self.parse_memory_operation(tx) {

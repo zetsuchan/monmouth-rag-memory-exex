@@ -1,6 +1,7 @@
 use crate::memory_exex::{Memory, MemoryType};
 use eyre::Result;
-use libmdbx::{Database, DatabaseFlags, Environment, EnvironmentFlags, Geometry, WriteFlags};
+use libmdbx::{Database, Environment, WriteFlags};
+use libmdbx::flags::DatabaseFlags;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use dashmap::DashMap;
@@ -21,12 +22,7 @@ impl MemoryStore {
         
         let mut env_builder = Environment::builder();
         env_builder.set_max_dbs(10);
-        env_builder.set_geometry(Geometry {
-            size: Some(0..1024 * 1024 * 1024 * 10),
-            growth_step: Some(1024 * 1024 * 256),
-            shrink_threshold: Some(1024 * 1024 * 512),
-            page_size: Some(4096),
-        });
+        env_builder.set_map_size(1024 * 1024 * 1024 * 10);
         
         let env = Arc::new(env_builder.open(path)?);
         let cache = Arc::new(DashMap::new());

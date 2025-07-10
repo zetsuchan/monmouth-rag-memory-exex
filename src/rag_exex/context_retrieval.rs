@@ -1,5 +1,5 @@
 use crate::rag_exex::vector_store::VectorStore;
-use crate::rag_exex::embeddings::EmbeddingPipeline;
+use crate::rag_exex::embeddings::RealtimeEmbeddingPipeline;
 use eyre::Result;
 use std::sync::Arc;
 

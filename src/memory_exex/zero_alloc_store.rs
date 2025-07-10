@@ -1,5 +1,5 @@
 use eyre::Result;
-use reth_primitives::{Address, H256};
+use alloy_primitives::{Address, B256};
 use std::collections::HashMap;
 use dashmap::DashMap;
 use parking_lot::RwLock;
@@ -22,9 +22,9 @@ pub struct ZeroAllocMemoryEntry {
 #[derive(Debug)]
 pub struct ZeroAllocMemoryStore {
     /// Agent -> (IntentId -> MemoryEntry)
-    entries: DashMap<Address, HashMap<H256, ZeroAllocMemoryEntry>>,
+    entries: DashMap<Address, HashMap<B256, ZeroAllocMemoryEntry>>,
     /// Agent -> Current memory root (intent_id)
-    current_root: DashMap<Address, H256>,
+    current_root: DashMap<Address, B256>,
     /// TTL in blocks
     ttl_blocks: u64,
     /// Buffer pool for common sizes
@@ -109,10 +109,10 @@ impl ZeroAllocMemoryStore {
     pub fn insert_or_update(
         &self,
         agent: Address,
-        intent_id: H256,
+        intent_id: B256,
         data: &[u8],
         current_block: u64,
-    ) -> Result<H256> {
+    ) -> Result<B256> {
         let mut agent_entries = self.entries.entry(agent).or_insert_with(HashMap::new);
         
         if let Some(entry) = agent_entries.get_mut(&intent_id) {
@@ -152,7 +152,7 @@ impl ZeroAllocMemoryStore {
     
     /// Get by intent with minimal copying
     #[inline]
-    pub fn get_by_intent(&self, agent: Address, intent_id: H256) -> Option<Vec<u8>> {
+    pub fn get_by_intent(&self, agent: Address, intent_id: B256) -> Option<Vec<u8>> {
         self.entries
             .get(&agent)?
             .get(&intent_id)
@@ -171,7 +171,7 @@ impl ZeroAllocMemoryStore {
     
     /// Get current memory root (intent_id) for agent
     #[inline]
-    pub fn get_current_root(&self, agent: Address) -> Option<H256> {
+    pub fn get_current_root(&self, agent: Address) -> Option<B256> {
         self.current_root.get(&agent).map(|r| *r)
     }
     
@@ -282,7 +282,7 @@ mod tests {
     fn test_zero_alloc_updates() {
         let store = ZeroAllocMemoryStore::new(100);
         let agent = Address::random();
-        let intent_id = H256::random();
+        let intent_id = B256::random();
         
         // First insert
         let data1 = b"Initial state";
@@ -322,8 +322,8 @@ mod tests {
         let store = ZeroAllocMemoryStore::new(10);
         let agent = Address::random();
         
-        let intent1 = H256::random();
-        let intent2 = H256::random();
+        let intent1 = B256::random();
+        let intent2 = B256::random();
         
         store.insert_or_update(agent, intent1, b"old", 50).unwrap();
         store.insert_or_update(agent, intent2, b"new", 55).unwrap();

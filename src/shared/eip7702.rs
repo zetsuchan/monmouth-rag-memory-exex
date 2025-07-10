@@ -1,5 +1,6 @@
 use eyre::Result;
-use reth_primitives::{Address, TransactionSigned, U256, Bytes};
+use reth_primitives::TransactionSigned;
+use alloy_primitives::{Address, U256, Bytes, B256};
 use serde::{Serialize, Deserialize};
 use std::sync::Arc;
 use dashmap::DashMap;
@@ -172,7 +173,7 @@ impl SelfPayingTransactionManager {
     ) -> Result<TransactionReceipt> {
         // Simulate operation execution
         Ok(TransactionReceipt {
-            transaction_hash: reth_primitives::H256::random(),
+            transaction_hash: B256::random(),
             success: true,
             gas_used: operation.gas_limit,
             logs: vec![],
@@ -200,7 +201,7 @@ impl SelfPayingTransactionManager {
 
 #[derive(Debug, Clone)]
 pub struct TransactionReceipt {
-    pub transaction_hash: reth_primitives::H256,
+    pub transaction_hash: B256,
     pub success: bool,
     pub gas_used: u64,
     pub logs: Vec<Log>,
@@ -209,14 +210,14 @@ pub struct TransactionReceipt {
 #[derive(Debug, Clone)]
 pub struct Log {
     pub address: Address,
-    pub topics: Vec<reth_primitives::H256>,
+    pub topics: Vec<B256>,
     pub data: Bytes,
 }
 
 /// Helper to create memory update operations
 pub fn create_memory_update_operation(
     memory_contract: Address,
-    intent_id: reth_primitives::H256,
+    intent_id: B256,
     data: &[u8],
 ) -> ChainedOperation {
     // Encode function call: updateMemory(bytes32 intentId, bytes data)
@@ -291,7 +292,7 @@ mod tests {
         let operations = vec![
             create_memory_update_operation(
                 Address::random(),
-                reth_primitives::H256::random(),
+                B256::random(),
                 b"test data",
             ),
             create_tool_execution_operation(

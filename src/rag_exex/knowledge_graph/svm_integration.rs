@@ -1,6 +1,6 @@
 use alloy::primitives::{Address, B256};
 use petgraph::graph::{DiGraph, NodeIndex};
-use petgraph::algo::{dijkstra, PageRank};
+use petgraph::algo::dijkstra;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
@@ -250,12 +250,12 @@ impl SVMGraphIntegration {
             return 0.0;
         }
         
-        // Calculate PageRank
-        let pagerank = PageRank::new(&*graph, self.config.pagerank_damping);
-        let scores = pagerank.calculate();
-        
+        // Calculate simple reputation score based on node connectivity
         if let Some(&idx) = node_map.get(&agent) {
-            scores.get(idx.index()).copied().unwrap_or(0.0)
+            let neighbors = graph.neighbors(idx).count();
+            let edges = graph.edges(idx).count();
+            // Simple scoring based on connectivity
+            (neighbors as f64 + edges as f64) / (graph.node_count() as f64).max(1.0)
         } else {
             0.0
         }

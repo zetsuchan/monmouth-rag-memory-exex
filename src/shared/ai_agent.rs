@@ -1,5 +1,6 @@
 use eyre::Result;
 use reth_primitives::TransactionSigned;
+use alloy_primitives::U256;
 use serde::{Serialize, Deserialize};
 use async_trait::async_trait;
 use std::time::Instant;
@@ -182,14 +183,14 @@ impl UnifiedAIDecisionEngine {
         tx.input().len() >= 4 && &tx.input()[0..4] == &[0xa9, 0x05, 0x9c, 0xbb]
     }
     
-    fn categorize_value(&self, value: reth_primitives::U256) -> ValueCategory {
-        if value == reth_primitives::U256::ZERO {
+    fn categorize_value(&self, value: U256) -> ValueCategory {
+        if value == U256::ZERO {
             ValueCategory::Zero
-        } else if value < reth_primitives::U256::from(1_000_000_000_000_000_000u64) {
+        } else if value < U256::from(1_000_000_000_000_000_000u64) {
             ValueCategory::Low
-        } else if value < reth_primitives::U256::from(10_000_000_000_000_000_000u128) {
+        } else if value < U256::from(10_000_000_000_000_000_000u128) {
             ValueCategory::Medium
-        } else if value < reth_primitives::U256::from(100_000_000_000_000_000_000u128) {
+        } else if value < U256::from(100_000_000_000_000_000_000u128) {
             ValueCategory::High
         } else {
             ValueCategory::Whale

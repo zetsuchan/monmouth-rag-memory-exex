@@ -3,6 +3,8 @@ use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 use std::sync::Arc;
+use reqwest::Client;
+use serde_json::json;
 
 #[derive(Debug)]
 pub struct EigenDAIntegration {
@@ -10,6 +12,7 @@ pub struct EigenDAIntegration {
     retriever_endpoint: String,
     blob_store: Arc<RwLock<HashMap<String, StoredBlob>>>,
     encoding_config: EncodingConfig,
+    http_client: Client,
 }
 
 #[derive(Debug, Clone)]
@@ -130,11 +133,17 @@ impl EigenDAIntegration {
             retriever_endpoint,
             blob_store: Arc::new(RwLock::new(HashMap::new())),
             encoding_config: EncodingConfig::default(),
+            http_client: Client::new(),
         }
     }
     
     pub fn with_encoding_config(mut self, config: EncodingConfig) -> Self {
         self.encoding_config = config;
+        self
+    }
+
+    pub fn with_http_client(mut self, client: Client) -> Self {
+        self.http_client = client;
         self
     }
     
@@ -267,16 +276,35 @@ impl EigenDAIntegration {
         match compression {
             CompressionType::None => Ok(data.to_vec()),
             CompressionType::Zstd => {
-                // In production: Use zstd compression
-                Ok(data.to_vec())
+                zstd::bulk::compress(data, 3)
+                    .map_err(|e| eyre::eyre!("Zstd compression failed: {}", e))
             }
             CompressionType::Lz4 => {
-                // In production: Use lz4 compression
-                Ok(data.to_vec())
+                Ok(lz4_flex::compress_prepend_size(data))
             }
             CompressionType::Snappy => {
-                // In production: Use snappy compression
-                Ok(data.to_vec())
+                let mut encoder = snap::raw::Encoder::new();
+                encoder.compress_vec(data)
+                    .map_err(|e| eyre::eyre!("Snappy compression failed: {}", e))
+            }
+        }
+    }
+
+    fn decompress_data(&self, data: &[u8], compression: &CompressionType) -> Result<Vec<u8>> {
+        match compression {
+            CompressionType::None => Ok(data.to_vec()),
+            CompressionType::Zstd => {
+                zstd::bulk::decompress(data, 1024 * 1024) // 1MB max decompressed size
+                    .map_err(|e| eyre::eyre!("Zstd decompression failed: {}", e))
+            }
+            CompressionType::Lz4 => {
+                lz4_flex::decompress_size_prepended(data)
+                    .map_err(|e| eyre::eyre!("LZ4 decompression failed: {}", e))
+            }
+            CompressionType::Snappy => {
+                let mut decoder = snap::raw::Decoder::new();
+                decoder.decompress_vec(data)
+                    .map_err(|e| eyre::eyre!("Snappy decompression failed: {}", e))
             }
         }
     }

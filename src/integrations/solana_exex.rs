@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 use std::sync::Arc;
 use dashmap::DashMap;
 use borsh::{BorshSerialize, BorshDeserialize};
+use alloy_primitives::Address;
 
 /// Solana ExEx Compatibility Layer
 /// 
@@ -19,7 +20,7 @@ pub struct SolanaAccount {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SolanaMemoryBridge {
-    pub monmouth_agent: reth_primitives::Address,
+    pub monmouth_agent: Address,
     pub solana_pda: [u8; 32],
     pub bridge_state: BridgeState,
     pub pending_transfers: Vec<MemoryTransfer>,
@@ -59,7 +60,7 @@ pub enum TransferStatus {
 
 #[derive(Debug)]
 pub struct SolanaExExAdapter {
-    bridges: Arc<DashMap<reth_primitives::Address, SolanaMemoryBridge>>,
+    bridges: Arc<DashMap<Address, SolanaMemoryBridge>>,
     solana_client: Arc<MockSolanaClient>,
     memory_compressor: Arc<MemoryCompressor>,
 }
@@ -106,7 +107,7 @@ impl SolanaExExAdapter {
     /// Create a bridge between Monmouth agent and Solana PDA
     pub async fn create_bridge(
         &self,
-        monmouth_agent: reth_primitives::Address,
+        monmouth_agent: Address,
         solana_pubkey: [u8; 32],
     ) -> Result<SolanaMemoryBridge> {
         // Derive PDA for the agent
@@ -130,7 +131,7 @@ impl SolanaExExAdapter {
     /// Transfer memory from Monmouth to Solana
     pub async fn transfer_to_solana(
         &self,
-        monmouth_agent: reth_primitives::Address,
+        monmouth_agent: Address,
         memory_data: &[u8],
         memory_hash: [u8; 32],
     ) -> Result<MemoryTransfer> {
@@ -161,7 +162,7 @@ impl SolanaExExAdapter {
     pub async fn transfer_from_solana(
         &self,
         solana_pda: [u8; 32],
-        target_agent: reth_primitives::Address,
+        target_agent: Address,
     ) -> Result<Vec<u8>> {
         let account = self.solana_client.accounts.get(&solana_pda)
             .ok_or_else(|| eyre::eyre!("Solana account not found"))?;
@@ -319,7 +320,7 @@ mod tests {
     #[tokio::test]
     async fn test_bridge_creation() {
         let adapter = SolanaExExAdapter::new();
-        let monmouth_agent = reth_primitives::Address::random();
+        let monmouth_agent = Address::random();
         let solana_pubkey = [1u8; 32];
         
         let bridge = adapter.create_bridge(monmouth_agent, solana_pubkey).await.unwrap();

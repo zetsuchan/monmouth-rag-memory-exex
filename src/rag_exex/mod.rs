@@ -10,6 +10,7 @@ use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
 use reth_primitives::{SealedBlockWithSenders, TransactionSigned};
+use alloy_primitives::Address;
 use reth_tracing::tracing::{info, debug, error};
 use tokio::sync::mpsc;
 use std::sync::Arc;
@@ -120,7 +121,7 @@ impl<Node: FullNodeComponents> RagExEx<Node> {
     async fn process_transaction(
         &self,
         tx: &TransactionSigned,
-        sender: &reth_primitives::Address,
+        sender: &Address,
         event_tx: &mpsc::Sender<RagEvent>,
     ) -> Result<()> {
         let tx_hash = tx.hash().to_string();

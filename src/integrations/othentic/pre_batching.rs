@@ -4,15 +4,106 @@
 //! with special handling for AI/RAG transactions and cross-chain intents.
 
 use crate::integrations::othentic::{
-    PreBatchingEngine, BatchConfig, TransactionPool, AITransaction, EVMTransaction,
-    CrossChainIntent, SortingStrategy, SortedBatch, ExecutionStep, BatchingMetrics,
-    TransactionPriority, OptimizationTarget, AIOperationType,
+    PreBatchingEngine, BatchConfig, OptimizationTarget,
 };
 use eyre::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::collections::{HashMap, BTreeMap};
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
+use alloy_primitives::{Address, U256, B256};
+
+// Define the missing types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionPool {
+    pub ai_transactions: BTreeMap<B256, AITransaction>,
+    pub evm_transactions: BTreeMap<B256, EVMTransaction>,
+    pub cross_chain_intents: Vec<CrossChainIntent>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AITransaction {
+    pub id: B256,
+    pub origin: Address,
+    pub target: Option<Address>,
+    pub operation_type: AIOperationType,
+    pub priority: TransactionPriority,
+    pub gas_limit: U256,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EVMTransaction {
+    pub id: B256,
+    pub from: Address,
+    pub to: Option<Address>,
+    pub value: U256,
+    pub gas_limit: U256,
+    pub gas_price: U256,
+    pub data: Vec<u8>,
+    pub nonce: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrossChainIntent {
+    pub id: B256,
+    pub source_chain: String,
+    pub target_chain: String,
+    pub agent: Address,
+    pub intent_data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TransactionPriority {
+    Low,
+    Normal,
+    High,
+    Urgent,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AIOperationType {
+    MemoryUpdate,
+    RAGQuery,
+    CrossChainSync,
+    AgentCommunication,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SortedBatch {
+    pub transactions: Vec<BatchTransaction>,
+    pub total_gas: U256,
+    pub estimated_time: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum BatchTransaction {
+    AI(AITransaction),
+    EVM(EVMTransaction),
+    CrossChain(CrossChainIntent),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecutionStep {
+    pub step_type: String,
+    pub gas_cost: U256,
+    pub dependencies: Vec<B256>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatchingMetrics {
+    pub total_batches: u64,
+    pub average_batch_size: f64,
+    pub gas_saved: u64,
+    pub compute_optimized: u64,
+    pub reorg_count: u64,
+}
+
+#[async_trait]
+pub trait SortingStrategy: Send + Sync {
+    async fn sort_transactions(&self, pool: &TransactionPool) -> Result<SortedBatch>;
+}
 
 impl PreBatchingEngine {
     pub fn new(config: BatchConfig) -> Self {
