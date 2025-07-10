@@ -107,3 +107,11 @@ path = "examples/state_synchronization_demo.rs"
 [[example]]
 name = "performance_production_demo"
 path = "examples/performance_production_demo.rs"
+
+[[example]]
+name = "integrated_agent_example"
+path = "examples/integrated_agent_example.rs"
+
+[[bench]]
+name = "integration_benchmarks"
+harness = false
