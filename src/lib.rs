@@ -30,6 +30,9 @@ pub mod alh;
 pub mod reorg;
 pub mod agents;
 pub mod enhanced_processor;
+pub mod performance;
+pub mod error_handling;
+pub mod monitoring;
 
 use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
