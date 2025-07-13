@@ -1,9 +1,15 @@
+pub mod chroma_config;
+pub mod chroma_store;
 pub mod vector_store;
 pub mod embeddings;
 pub mod context_retrieval;
 pub mod intent_parser;
 pub mod knowledge_graph;
 pub mod agent_context;
+pub mod enhanced_intent_parser;
+pub mod semantic_layer;
+pub mod cow_matcher;
+pub mod intent_converter;
 
 use crate::{RagEvent, shared::Metrics};
 use eyre::Result;

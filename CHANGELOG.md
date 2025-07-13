@@ -797,6 +797,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Strong typing with domain-specific structures
 - Mock implementations ready for production integration
 
+## [0.6.0] - 2025-07-13
+
+### Added
+- **Two-Layer Intent Architecture**: Complete natural language processing for blockchain intents
+  - `EnhancedIntentParser` with embedding-based semantic understanding
+  - Template matching system for common DeFi operations (swap, bridge, stake)
+  - Confidence scoring and priority assignment for intent execution
+  - Support for multi-step intents with dependency tracking
+  
+- **Semantic Understanding Layer**: Deep contextual analysis for intents
+  - `SemanticLayer` with knowledge graph integration
+  - Entity extraction and relationship mapping
+  - Risk assessment for each intent type
+  - Alternative interpretation generation
+  - Semantic caching for performance optimization
+  
+- **Coincidence of Wants (CoW) Matcher**: Fuzzy matching engine for intent discovery
+  - `CoWMatcher` with multiple matching strategies (direct swap, ring matching)
+  - Intent pool management with expiration tracking
+  - Match scoring based on token similarity, amount alignment, and time compatibility
+  - Execution plan generation for matched intents
+  - Support for multi-party and cross-chain matches
+  
+- **Intent-to-Blockchain Converter**: Transaction generation from high-level intents
+  - `IntentConverter` with protocol adapter system
+  - Support for major DeFi protocols (starting with Uniswap V3)
+  - Gas estimation and optimization
+  - Safety checking with malicious pattern detection
+  - Alternative execution path discovery
+  
+- **ChromaDB Integration**: Replaced custom vector store with ChromaDB
+  - `ChromaStore` implementation using HTTP API
+  - Support for multiple collections (rag_embeddings, agent_memory)
+  - Advanced search with metadata filtering
+  - Batch operations for improved performance
+  - Comprehensive caching layer
+  - Configuration via environment variables
+  - Docker-based deployment guide
+  - Example demonstrating all ChromaDB features
+
+### Changed
+- **Vector Store Backend**: Migrated from in-memory store to ChromaDB
+  - Maintains API compatibility for seamless migration
+  - Improved scalability for large embedding datasets
+  - Persistent storage with crash recovery
+  - Better search performance with optimized indexes
+
+### Technical Improvements
+- **NLP Integration**: Advanced intent parsing without heavy ML dependencies
+  - Lightweight embedding generation (384 dimensions)
+  - Template-based pattern matching with fuzzy logic
+  - Context-aware intent enhancement
+  
+- **Performance Optimizations**:
+  - ChromaDB connection pooling and caching
+  - Batch embedding operations
+  - Lazy loading for semantic metadata
+  - Efficient similarity calculations
+  
+- **Production Readiness**:
+  - Comprehensive error handling for all new modules
+  - Extensive logging and metrics
+  - Modular architecture for easy extension
+  - Full test coverage for critical paths
+
+### Dependencies
+- Added `chromadb-rs = "0.1"` for vector database
+- Added `regex = "1.11"` for pattern matching
+- Removed conflicting ML dependencies in favor of lightweight alternatives
+
+### Documentation
+- Added ChromaDB setup guide with Docker instructions
+- Created comprehensive integration example
+- Updated module documentation with usage patterns
+
 ## [Unreleased]
 
 ### Planned

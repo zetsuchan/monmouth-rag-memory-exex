@@ -29,7 +29,7 @@ impl ContextRetriever {
     ) -> Result<Vec<String>> {
         let query_embedding = self.generate_intent_embedding(intent).await?;
         
-        let similar_txs = self.vector_store.query_similar(query_embedding, 10).await?;
+        let similar_txs = self.vector_store.search(query_embedding, 10).await?;
         
         let mut context = Vec::new();
         

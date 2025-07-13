@@ -18,11 +18,10 @@ futures = "0.3"
 futures-util = "0.3"
 async-trait = "0.1"
 
-# Vector store and embeddings (removing conflicting ML dependencies)
-# chromadb = "0.2"       # Causes version conflicts
-# candle-core = "0.7"    # Rand version conflicts
-# candle-transformers = "0.7"  # Rand version conflicts
-# tokenizers = "0.20"    # Not needed for basic functionality
+# Vector store and embeddings
+# Using HTTP client for ChromaDB instead of native client to avoid conflicts
+chromadb-rs = "0.1"  # Lightweight ChromaDB client
+regex = "1.11"
 
 # Database
 libmdbx = "0.5"
@@ -124,3 +123,7 @@ path = "examples/performance_production_demo.rs"
 [[example]]
 name = "integrated_agent_example"
 path = "examples/integrated_agent_example.rs"
+
+[[example]]
+name = "chromadb_integration_demo"
+path = "examples/chromadb_integration_demo.rs"
