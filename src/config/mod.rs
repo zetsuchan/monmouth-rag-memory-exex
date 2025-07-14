@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Duration;
 
 /// Main ExEx configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,6 +14,8 @@ pub struct ExExConfiguration {
     pub individual: IndividualExExConfig,
     /// Shared configuration across ExEx instances
     pub shared: SharedExExConfig,
+    /// Performance configuration
+    pub performance: PerformanceConfig,
 }
 
 /// Individual ExEx configuration
@@ -249,6 +252,23 @@ pub enum DiscoveryMethod {
     DNS { domain: String },
 }
 
+/// Performance configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PerformanceConfig {
+    /// Maximum concurrent block processing
+    pub max_concurrent_processing: usize,
+    /// Enable batch processing
+    pub enable_batching: bool,
+    /// Batch size for processing
+    pub batch_size: usize,
+    /// Batch timeout
+    pub batch_timeout: Duration,
+    /// Enable caching
+    pub enable_caching: bool,
+    /// Cache size in MB
+    pub cache_size_mb: usize,
+}
+
 /// Message bus settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageBusSettings {
@@ -263,6 +283,7 @@ impl Default for ExExConfiguration {
         Self {
             individual: IndividualExExConfig::default(),
             shared: SharedExExConfig::default(),
+            performance: PerformanceConfig::default(),
         }
     }
 }
@@ -440,6 +461,19 @@ impl Default for MessageBusSettings {
         Self {
             channel_buffer_size: 1000,
             max_message_size: 1024 * 1024, // 1MB
+        }
+    }
+}
+
+impl Default for PerformanceConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrent_processing: 10,
+            enable_batching: true,
+            batch_size: 100,
+            batch_timeout: Duration::from_millis(100),
+            enable_caching: true,
+            cache_size_mb: 256,
         }
     }
 }

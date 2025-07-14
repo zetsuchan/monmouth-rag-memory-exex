@@ -19,6 +19,7 @@ use dashmap::DashMap;
 use eyre::Result;
 use futures_util::{FutureExt, StreamExt};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
+use reth_execution_types::Chain;
 use reth_node_api::FullNodeComponents;
 use reth_primitives::SealedBlockWithSenders;
 use reth_tracing::tracing::{debug, error, info, warn};
@@ -30,6 +31,7 @@ use crate::{
     memory_exex::MemoryExEx,
     rag_exex::RagExEx,
     shared::Metrics,
+    sync::{ExExSyncCoordinator, MemorySyncHandle, RagSyncHandle},
     RagEvent, MemoryEvent,
 };
 
@@ -84,6 +86,15 @@ pub struct EnhancedRagMemoryExEx<Node: FullNodeComponents> {
     /// Inter-ExEx coordinator
     coordinator: Arc<InterExExCoordinator>,
     
+    /// Synchronization coordinator
+    sync_coordinator: Arc<ExExSyncCoordinator>,
+    
+    /// Memory sync handle
+    memory_sync: MemorySyncHandle,
+    
+    /// RAG sync handle
+    rag_sync: RagSyncHandle,
+    
     /// Metrics collector
     metrics: Arc<Metrics>,
     
@@ -114,6 +125,13 @@ impl<Node: FullNodeComponents> EnhancedRagMemoryExEx<Node> {
         
         // Initialize metrics
         let metrics = Arc::new(Metrics::new()?);
+        
+        // Initialize synchronization coordinator
+        let sync_coordinator = Arc::new(ExExSyncCoordinator::new(
+            config.performance.max_concurrent_processing
+        ));
+        let memory_sync = MemorySyncHandle::new(sync_coordinator.clone());
+        let rag_sync = RagSyncHandle::new(sync_coordinator.clone());
         
         // Initialize sub-ExEx instances
         let rag_exex = Arc::new(RwLock::new(
@@ -173,6 +191,9 @@ impl<Node: FullNodeComponents> EnhancedRagMemoryExEx<Node> {
             rag_exex,
             memory_exex,
             coordinator,
+            sync_coordinator,
+            memory_sync,
+            rag_sync,
             metrics,
             checkpoints: Arc::new(RwLock::new(Vec::new())),
             last_committed_height: 0,
@@ -208,23 +229,32 @@ impl<Node: FullNodeComponents> EnhancedRagMemoryExEx<Node> {
     }
     
     /// Handle committed chain
-    async fn handle_chain_committed(&mut self, chain: &std::sync::Arc<reth_exex::Chain>) -> Result<()> {
+    async fn handle_chain_committed(&mut self, chain: &Chain) -> Result<()> {
         self.state = ExExState::Processing;
         
         for block in chain.blocks() {
             let block_number = block.number();
             debug!("Processing block {}", block_number);
             
-            // Process through RAG ExEx
-            {
-                let mut rag = self.rag_exex.write().await;
-                rag.process_block(block).await?;
-            }
+            // Acquire processing permit for rate limiting
+            let _permit = self.sync_coordinator.acquire_processing_permit().await?;
             
-            // Process through Memory ExEx
+            // Process through Memory ExEx first
             {
                 let mut memory = self.memory_exex.write().await;
                 memory.process_block(block).await?;
+            }
+            
+            // Signal that memory has committed this block
+            self.memory_sync.commit_block(block_number).await?;
+            
+            // Process through RAG ExEx after memory commit
+            {
+                // Wait for memory to be committed before RAG processing
+                self.rag_sync.wait_for_block(block_number).await?;
+                
+                let mut rag = self.rag_exex.write().await;
+                rag.process_block(block).await?;
             }
             
             // Send inter-ExEx update
@@ -235,6 +265,12 @@ impl<Node: FullNodeComponents> EnhancedRagMemoryExEx<Node> {
             
             // Update metrics
             self.metrics.record_block_processed();
+            
+            // Cleanup old notifications periodically
+            if block_number % 1000 == 0 {
+                let cleanup_threshold = block_number.saturating_sub(2000);
+                self.sync_coordinator.cleanup_old_notifications(cleanup_threshold).await;
+            }
         }
         
         Ok(())
@@ -243,8 +279,8 @@ impl<Node: FullNodeComponents> EnhancedRagMemoryExEx<Node> {
     /// Handle chain reorg
     async fn handle_chain_reorged(
         &mut self, 
-        old: &std::sync::Arc<reth_exex::Chain>,
-        new: &std::sync::Arc<reth_exex::Chain>,
+        old: &Chain,
+        new: &Chain,
     ) -> Result<()> {
         self.state = ExExState::Reorging;
         
@@ -263,7 +299,7 @@ impl<Node: FullNodeComponents> EnhancedRagMemoryExEx<Node> {
     }
     
     /// Handle chain reversion
-    async fn handle_chain_reverted(&mut self, old: &std::sync::Arc<reth_exex::Chain>) -> Result<()> {
+    async fn handle_chain_reverted(&mut self, old: &Chain) -> Result<()> {
         let fork_block = old.fork_block();
         warn!("Chain reverted to block {}", fork_block);
         

@@ -6,6 +6,7 @@ pub mod portability;
 pub mod zero_alloc_store;
 pub mod agent_integration;
 pub mod types;
+pub mod indexed_store;
 
 use crate::{MemoryEvent, shared::Metrics};
 use eyre::Result;
@@ -27,6 +28,7 @@ use self::{
 };
 
 pub use self::types::{MemoryEntry, MemoryRequest, MemoryResponse, QueryCriteria, SortBy};
+pub use self::indexed_store::{IndexedMemoryStore as IndexedStore, IndexedStoreConfig as IndexedConfig, BatchOperation, MemoryOperation as IndexedMemoryOperation};
 
 #[derive(Debug)]
 pub struct MemoryExEx<Node: FullNodeComponents> {

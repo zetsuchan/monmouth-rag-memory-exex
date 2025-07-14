@@ -37,6 +37,7 @@ pub mod inter_exex;
 pub mod config;
 pub mod enhanced_main;
 pub mod ai;
+pub mod sync;
 
 use eyre::Result;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};

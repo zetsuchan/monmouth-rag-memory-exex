@@ -11,6 +11,7 @@ reth-node-api = { git = "https://github.com/paradigmxyz/reth", tag = "v1.5.1" }
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", tag = "v1.5.1" }
 reth-provider = { git = "https://github.com/paradigmxyz/reth", tag = "v1.5.1" }
 reth-tracing = { git = "https://github.com/paradigmxyz/reth", tag = "v1.5.1" }
+reth-execution-types = { git = "https://github.com/paradigmxyz/reth", tag = "v1.5.1" }
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
